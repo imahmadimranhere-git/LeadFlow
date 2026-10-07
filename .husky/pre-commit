@@ -1,0 +1,6 @@
+# Pre-commit: block commits that contain secrets (API keys, tokens, private keys)
+npx secretlint $(git diff --cached --name-only --diff-filter=ACM) || {
+  echo ""
+  echo "❌ Secret detected! Commit blocked. Remove the secret, rotate it, and try again."
+  exit 1
+}

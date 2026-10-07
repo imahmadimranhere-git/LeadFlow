@@ -1,0 +1,17 @@
+{
+  "name": "leadflow-erp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "LeadFlow ERP \u2014 root tooling (git hooks + secret scanning)",
+  "scripts": {
+    "prepare": "husky",
+    "secret-scan": "secretlint \"**/*\"",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "test": "npm --prefix server test"
+  },
+  "devDependencies": {
+    "@secretlint/secretlint-rule-preset-recommend": "^9.0.0",
+    "husky": "^9.1.7",
+    "secretlint": "^9.0.0"
+  }
+}

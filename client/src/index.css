@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Brand tokens — tenants will override the accent later (white-label) */
+@theme {
+  --color-brand-50: #ecfdf3;
+  --color-brand-500: #16a34a;
+  --color-brand-600: #15803d;
+  --color-ink-900: #0b0f0c;
+  --color-ink-800: #141a16;
+}
+
+body {
+  @apply bg-white text-ink-900 antialiased;
+}
