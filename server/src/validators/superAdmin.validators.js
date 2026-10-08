@@ -89,3 +89,33 @@ export const listAuditQuery = z
     to: z.coerce.date().optional(),
   })
   .strict();
+
+// ---- AI models & prices (USD per 1M tokens) ----
+const AI_MODEL_ID = z.string().trim().regex(/^[a-z0-9][a-z0-9._:-]{1,80}$/, 'Model id: lowercase letters, numbers, . _ : -');
+const price = z.number().min(0).max(1000);
+export const createAiModelBody = z
+  .object({
+    provider: z.enum(['OPENAI', 'ANTHROPIC']),
+    modelId: AI_MODEL_ID,
+    displayName: safeText(80),
+    inputPerMTok: price,
+    outputPerMTok: price,
+    isActive: z.boolean().default(true),
+    isDefault: z.boolean().default(false),
+    verified: z.boolean().default(false),
+    notes: z.string().trim().max(300).default(''),
+  })
+  .strict();
+export const updateAiModelBody = z
+  .object({
+    displayName: safeText(80),
+    inputPerMTok: price,
+    outputPerMTok: price,
+    isActive: z.boolean(),
+    isDefault: z.boolean(),
+    verified: z.boolean(),
+    notes: z.string().trim().max(300),
+  })
+  .partial()
+  .strict()
+  .refine((d) => Object.keys(d).length > 0, 'Nothing to update');

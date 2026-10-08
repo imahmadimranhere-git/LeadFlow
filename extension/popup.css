@@ -1,0 +1,28 @@
+:root { color-scheme: dark; --bg: #0b0f0d; --card: #141a17; --line: #26302b; --text: #e8efe9; --muted: #8a9a91; --brand: #22c55e; --red: #f87171; --amber: #fbbf24; }
+* { box-sizing: border-box; }
+body { margin: 0; width: 380px; max-height: 600px; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+header strong { color: var(--brand); }
+#who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+section { padding: 12px; }
+label { display: block; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+input, select, textarea { display: block; width: 100%; margin-top: 3px; padding: 7px 8px; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); border-color: transparent; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+button { margin-top: 12px; width: 100%; padding: 9px; border: 0; border-radius: 8px; background: var(--brand); color: #04110a; font-weight: 600; cursor: pointer; }
+button:disabled { opacity: .6; cursor: default; }
+button.secondary { background: var(--card); color: var(--text); border: 1px solid var(--line); }
+button.link { width: auto; margin: 0; padding: 0; background: none; color: var(--muted); font-weight: 400; text-decoration: underline; }
+.actions { display: flex; gap: 8px; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.small { font-size: 11px; }
+.break { word-break: break-all; }
+.page { padding: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+.page-title { font-weight: 600; }
+.check { margin-top: 8px; }
+.check div { margin-top: 4px; padding: 6px 8px; border-radius: 6px; background: var(--card); }
+.check .warn { color: var(--amber); }
+.msg { margin: 8px 12px 0; padding: 8px; border-radius: 8px; background: var(--card); }
+.msg.error { color: var(--red); }
+.msg.ok { color: var(--brand); }

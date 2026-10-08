@@ -104,3 +104,10 @@ export async function getUsage(tenantId, now = new Date()) {
   ];
   return { period, plan: { id: plan._id ? String(plan._id) : null, name: plan.name, code: plan.code }, rows };
 }
+
+/** Adds usage WITHOUT a limit check (e.g. an AI answer used a few more tokens than reserved). */
+export async function addUsage(tenantId, metric, amount, now = new Date()) {
+  if (!MONTHLY_METRICS[metric]) throw new Error(`Unknown metric ${metric}`);
+  if (!Number.isInteger(amount) || amount < 1) return;
+  await UsageCounter.updateOne({ tenantId, metric, period: periodKey(now) }, { $inc: { count: amount } }, { upsert: true });
+}

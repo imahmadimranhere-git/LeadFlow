@@ -46,6 +46,8 @@ export function errorHandler(err, req, res, _next) {
     errors: known?.errors ?? [],
     errorId: req.id,
   };
+  // Extra, deliberately safe data some errors carry (e.g. which existing leads a duplicate matched)
+  if (known?.details) body.details = known.details;
 
   // Debug message only in development, NEVER in production
   if (env.NODE_ENV === 'development' && !known) body.debug = err.message;

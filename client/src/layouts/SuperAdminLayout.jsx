@@ -12,6 +12,8 @@ const NAV = [
       { to: '/super-admin/tenants', label: 'Tenants', icon: 'building' },
       { to: '/super-admin/plans', label: 'Plans', icon: 'card' },
       { to: '/super-admin/invoices', label: 'Invoices', icon: 'receipt' },
+      { to: '/super-admin/industry-packs', label: 'Industry packs', icon: 'template' },
+      { to: '/super-admin/ai-models', label: 'AI models', icon: 'cpu' },
       { to: '/super-admin/audit-logs', label: 'Audit logs', icon: 'shield' },
     ],
   },

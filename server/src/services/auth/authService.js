@@ -5,6 +5,7 @@ import User from '../../models/User.js';
 import Tenant from '../../models/Tenant.js';
 import Plan from '../../models/Plan.js';
 import { createInitialSubscription } from '../billing/subscriptionService.js';
+import TenantSettings from '../../models/TenantSettings.js';
 import ApiError from '../../utils/ApiError.js';
 import { runAsSystem, runWithTenant } from '../../utils/tenantContext.js';
 import { logSecurityEvent } from '../../utils/securityLogger.js';
@@ -105,6 +106,7 @@ export async function register({ name, email, password, companyName }, meta) {
     user = await runWithTenant({ tenantId: tenant._id }, async () => {
       const owner = await User.create({ name, email, passwordHash, role: 'TENANT_OWNER' });
       if (trialPlan) await createInitialSubscription(tenant, trialPlan);
+      await TenantSettings.create({ tenantId: tenant._id }); // onboarding wizard starts from here
       return owner;
     });
   } catch (err) {

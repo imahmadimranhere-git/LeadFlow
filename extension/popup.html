@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>LeadFlow — Save Lead</title>
+  <link rel="stylesheet" href="popup.css" />
+  <script type="module" src="popup.js"></script>
+</head>
+<body>
+  <header>
+    <strong>LeadFlow</strong>
+    <span id="who" class="muted"></span>
+    <button id="btn-logout" class="link hidden" type="button">Disconnect</button>
+  </header>
+
+  <div id="msg" class="msg hidden" role="status"></div>
+
+  <!-- 1) Connect (pairing code) -->
+  <section id="view-pair" class="hidden">
+    <p>Open LeadFlow → <b>Settings → Chrome extension</b> → <b>Get pairing code</b>, then type the code here. Your password is never entered in the extension.</p>
+    <label>Server address <input id="pair-server" type="url" autocomplete="off" spellcheck="false" /></label>
+    <label>Pairing code <input id="pair-code" maxlength="12" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX" /></label>
+    <button id="btn-pair" type="button">Connect</button>
+  </section>
+
+  <!-- 2) Save lead -->
+  <section id="view-main" class="hidden">
+    <div class="page">
+      <div id="page-title" class="page-title"></div>
+      <div id="page-url" class="muted small break"></div>
+      <div id="page-kind" class="small"></div>
+    </div>
+    <div id="check" class="check"></div>
+
+    <form id="form" autocomplete="off" novalidate>
+      <p class="small muted">Fill in only what you can SEE on this page. Nothing is looked up or guessed.</p>
+      <label>Lead name <input name="name" maxlength="150" /></label>
+      <div class="row">
+        <label>Name on profile <input name="personName" maxlength="120" /></label>
+        <label>Handle <input name="handle" maxlength="61" placeholder="@username" /></label>
+      </div>
+      <label>Profile link <input name="profileUrl" type="url" maxlength="2048" /></label>
+      <div class="row">
+        <label>Profile type
+          <select name="profileType">
+            <option value="">Don't know</option><option value="PERSONAL">Personal</option><option value="BUSINESS">Business</option><option value="CREATOR">Creator</option>
+          </select>
+        </label>
+        <label>Company <input name="companyName" maxlength="150" /></label>
+      </div>
+      <div class="row">
+        <label>Phone <input name="phone" maxlength="30" /></label>
+        <label>Email <input name="email" type="email" maxlength="254" /></label>
+      </div>
+      <div class="row">
+        <label>Website <input name="website" maxlength="2048" /></label>
+        <label>City <input name="city" maxlength="60" /></label>
+      </div>
+      <label>Where did you see the contact?
+        <select name="contactSource">
+          <option value="POST_TEXT">Written in the post</option>
+          <option value="PUBLIC_BIO">Public profile bio</option>
+          <option value="BUSINESS_CONTACT_BUTTON">Business contact button</option>
+          <option value="USER_ENTERED" selected>Other / I typed it</option>
+        </select>
+      </label>
+      <label>Service <select name="requiredService"><option value="">Auto (from the text)</option></select></label>
+      <label>Text from the page (select text on the page before opening, or paste) <textarea name="snippet" rows="4" maxlength="3000"></textarea></label>
+      <label>Notes <textarea name="notes" rows="2" maxlength="2000"></textarea></label>
+      <label>Lawful basis
+        <select name="lawfulBasis">
+          <option value="LEGITIMATE_INTEREST" selected>Legitimate interest</option><option value="CONSENT">Consent</option><option value="CONTRACT">Contract</option><option value="OTHER">Other</option>
+        </select>
+      </label>
+      <button id="btn-save" type="submit">Save lead</button>
+    </form>
+  </section>
+
+  <!-- 3) Result -->
+  <section id="view-done" class="hidden">
+    <p id="done-text"></p>
+    <div class="actions">
+      <button id="btn-open" type="button">Open in dashboard</button>
+      <button id="btn-again" type="button" class="secondary">Back</button>
+    </div>
+  </section>
+</body>
+</html>

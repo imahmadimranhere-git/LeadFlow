@@ -5,11 +5,15 @@ import Icon from '../components/icons.jsx';
 import { Logo } from '../components/ui.jsx';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 
-function NavContent({ groups, footer, subtitle }) {
+function NavContent({ groups, footer, subtitle, brandLogoUrl }) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-5 pb-4 pt-5">
-        <Logo />
+        {brandLogoUrl ? (
+          <img src={brandLogoUrl} alt={subtitle || 'Company logo'} className="max-h-10 max-w-[180px] object-contain" />
+        ) : (
+          <Logo />
+        )}
         {subtitle && <p className="mt-1 truncate text-xs text-white/40">{subtitle}</p>}
       </div>
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4" aria-label="Main">
@@ -43,7 +47,7 @@ function NavContent({ groups, footer, subtitle }) {
   );
 }
 
-export default function AppShell({ groups, subtitle, topBar, sidebarFooter, banner, children }) {
+export default function AppShell({ groups, subtitle, topBar, sidebarFooter, banner, brandLogoUrl, children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
@@ -61,7 +65,7 @@ export default function AppShell({ groups, subtitle, topBar, sidebarFooter, bann
       {banner}
       {/* Desktop sidebar */}
       <aside className={`fixed bottom-0 left-0 hidden w-64 border-r border-white/10 bg-ink-900 lg:block ${banner ? 'top-8' : 'top-0'}`}>
-        <NavContent groups={groups} footer={sidebarFooter} subtitle={subtitle} />
+        <NavContent groups={groups} footer={sidebarFooter} subtitle={subtitle} brandLogoUrl={brandLogoUrl} />
       </aside>
 
       {/* Mobile drawer */}
@@ -69,7 +73,7 @@ export default function AppShell({ groups, subtitle, topBar, sidebarFooter, bann
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/70" onClick={() => setMobileOpen(false)} aria-hidden="true" />
           <aside className="absolute inset-y-0 left-0 w-72 max-w-[85%] bg-ink-900 shadow-2xl ring-1 ring-white/10">
-            <NavContent groups={groups} footer={sidebarFooter} subtitle={subtitle} />
+            <NavContent groups={groups} footer={sidebarFooter} subtitle={subtitle} brandLogoUrl={brandLogoUrl} />
           </aside>
         </div>
       )}

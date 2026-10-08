@@ -2,7 +2,7 @@
 import './helpers/setupEnv.js';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { encrypt, decrypt, maskSecret } from '../src/utils/crypto.js';
+import { encrypt, decrypt, maskSecret, reEncrypt } from '../src/utils/crypto.js';
 import { base32Encode, base32Decode, hotp, verifyTotp, totpAt, currentStep, generateTotpSecret } from '../src/services/superAdmin/totp.js';
 import { sanitizeMetadata } from '../src/services/audit/auditService.js';
 
@@ -37,6 +37,34 @@ describe('AES-256-GCM encryption', () => {
   it('masks secrets for display', () => {
     assert.equal(maskSecret('sk-abcdef123456'), 'sk-••••3456');
     assert.equal(maskSecret('abc'), '••••');
+  });
+});
+
+describe('Encryption key rotation', () => {
+  const OLD = 'b'.repeat(64);
+  const NEW = 'c'.repeat(64);
+  const oldRing = { current: 1, keys: { 1: OLD } };
+  const rotatingRing = { current: 2, keys: { 2: NEW, 1: OLD } };
+  const newOnlyRing = { current: 2, keys: { 2: NEW } };
+
+  it('old data still decrypts during rotation, then is re-encrypted with the new key', () => {
+    const old = encrypt('sk-secret-value-123', oldRing);
+    assert.equal(old.keyVersion, 1);
+    assert.equal(decrypt(old, rotatingRing), 'sk-secret-value-123');
+
+    const rotated = reEncrypt(old, rotatingRing);
+    assert.equal(rotated.keyVersion, 2);
+    assert.equal(decrypt(rotated, newOnlyRing), 'sk-secret-value-123'); // works after the old key is removed
+    assert.throws(() => decrypt(old, newOnlyRing)); // and the old copy no longer opens
+  });
+
+  it('values already on the current key are left alone', () => {
+    assert.equal(reEncrypt(encrypt('x', rotatingRing), rotatingRing), null);
+  });
+
+  it('the wrong key cannot decrypt', () => {
+    const enc = encrypt('hello', oldRing);
+    assert.throws(() => decrypt(enc, { current: 1, keys: { 1: NEW } }));
   });
 });
 

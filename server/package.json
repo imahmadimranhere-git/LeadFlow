@@ -11,7 +11,9 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "test": "node --test --test-concurrency=1",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "rotate-keys": "node scripts/rotateKeys.js",
+    "webhook:test": "node scripts/sendTestWebhook.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -23,6 +25,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.5",
+    "nodemailer": "^9.0.5",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",
     "zod": "^3.24.1"

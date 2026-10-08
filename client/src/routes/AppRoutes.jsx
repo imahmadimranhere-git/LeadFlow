@@ -16,7 +16,21 @@ const DashboardPage = lazy(() => import('../pages/app/DashboardPage.jsx'));
 const TeamPage = lazy(() => import('../pages/app/TeamPage.jsx'));
 const AccountPage = lazy(() => import('../pages/app/AccountPage.jsx'));
 const BillingPage = lazy(() => import('../pages/app/BillingPage.jsx'));
+const CompanySettingsPage = lazy(() => import('../pages/app/CompanySettingsPage.jsx'));
+const IntegrationsPage = lazy(() => import('../pages/app/IntegrationsPage.jsx'));
+const LeadsPage = lazy(() => import('../pages/app/leads/LeadsPage.jsx'));
+const LeadDetailPage = lazy(() => import('../pages/app/leads/LeadDetailPage.jsx'));
+const PipelinePage = lazy(() => import('../pages/app/leads/PipelinePage.jsx'));
+const DiscoveryPage = lazy(() => import('../pages/app/discovery/DiscoveryPage.jsx'));
+const SignalsPage = lazy(() => import('../pages/app/signals/SignalsPage.jsx'));
+const HashtagWatchesPage = lazy(() => import('../pages/app/signals/HashtagWatchesPage.jsx'));
+const AiUsagePage = lazy(() => import('../pages/app/AiUsagePage.jsx'));
+const ExtensionPage = lazy(() => import('../pages/app/ExtensionPage.jsx'));
+const DoNotContactPage = lazy(() => import('../pages/app/DoNotContactPage.jsx'));
+const OnboardingPage = lazy(() => import('../pages/app/OnboardingPage.jsx'));
+const IndustryPacksPage = lazy(() => import('../pages/superAdmin/IndustryPacksPage.jsx'));
 const InvoicesPage = lazy(() => import('../pages/superAdmin/InvoicesPage.jsx'));
+const AiModelsPage = lazy(() => import('../pages/superAdmin/AiModelsPage.jsx'));
 const PlatformSettingsPage = lazy(() => import('../pages/superAdmin/PlatformSettingsPage.jsx'));
 const StatusPage = lazy(() => import('../pages/StatusPage.jsx'));
 const AdminLoginPage = lazy(() => import('../pages/superAdmin/AdminLoginPage.jsx'));
@@ -38,6 +52,8 @@ function SuperAdminArea() {
           <Route path="tenants/:id" element={<TenantDetailPage />} />
           <Route path="plans" element={<PlansPage />} />
           <Route path="invoices" element={<InvoicesPage />} />
+          <Route path="industry-packs" element={<IndustryPacksPage />} />
+          <Route path="ai-models" element={<AiModelsPage />} />
           <Route path="settings" element={<PlatformSettingsPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />
           <Route path="account" element={<AdminAccountPage />} />
@@ -57,10 +73,22 @@ export default function AppRoutes() {
       <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
       <Route path="/accept-invite" element={<GuestRoute><AcceptInvitePage /></GuestRoute>} />
 
+      <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
       <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="settings/team" element={<RequirePermission permissions={['users:read']}><TeamPage /></RequirePermission>} />
         <Route path="settings/account" element={<AccountPage />} />
+        <Route path="leads" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><LeadsPage /></RequirePermission>} />
+        <Route path="leads/:id" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><LeadDetailPage /></RequirePermission>} />
+        <Route path="discovery" element={<RequirePermission permissions={['leads:write']}><DiscoveryPage /></RequirePermission>} />
+        <Route path="signals" element={<RequirePermission permissions={['leads:write']}><SignalsPage /></RequirePermission>} />
+        <Route path="hashtag-watches" element={<RequirePermission permissions={['leads:write']}><HashtagWatchesPage /></RequirePermission>} />
+        <Route path="pipeline" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><PipelinePage /></RequirePermission>} />
+        <Route path="settings/do-not-contact" element={<RequirePermission permissions={['leads:delete']}><DoNotContactPage /></RequirePermission>} />
+        <Route path="settings/company" element={<CompanySettingsPage />} />
+        <Route path="ai-usage" element={<RequirePermission permissions={['billing:manage', 'integrations:manage']}><AiUsagePage /></RequirePermission>} />
+        <Route path="settings/extension" element={<RequirePermission permissions={['leads:write']}><ExtensionPage /></RequirePermission>} />
+        <Route path="settings/integrations" element={<RequirePermission permissions={['integrations:manage']}><IntegrationsPage /></RequirePermission>} />
         <Route path="settings/billing" element={<RequirePermission permissions={['billing:manage']}><BillingPage /></RequirePermission>} />
         {COMING_SOON_ITEMS.map((item) => (
           <Route

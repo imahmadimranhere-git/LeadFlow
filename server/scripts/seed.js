@@ -11,6 +11,10 @@ import { connectDB, disconnectDB } from '../src/config/db.js';
 import Plan from '../src/models/Plan.js';
 import PlatformAdmin from '../src/models/PlatformAdmin.js';
 import { DEFAULT_PLANS } from '../src/config/defaultPlans.js';
+import IndustryPack from '../src/models/IndustryPack.js';
+import { DEFAULT_INDUSTRY_PACKS } from '../src/config/defaultIndustryPacks.js';
+import ModelPricing from '../src/models/ModelPricing.js';
+import { DEFAULT_MODEL_PRICING } from '../src/config/aiOptions.js';
 import { createPlatformAdmin } from '../src/services/superAdmin/adminAuthService.js';
 import { hashPassword } from '../src/services/auth/passwordService.js';
 import { recordAudit } from '../src/services/audit/auditService.js';
@@ -38,6 +42,31 @@ async function seedPlans() {
   }
   await Plan.insertMany(DEFAULT_PLANS);
   console.log(`✔ Created ${DEFAULT_PLANS.length} default plans`);
+}
+
+/** Adds any seed pack whose code doesn't exist yet (never overwrites packs you edited). */
+async function seedIndustryPacks() {
+  let created = 0;
+  for (const pack of DEFAULT_INDUSTRY_PACKS) {
+    const exists = await IndustryPack.exists({ code: pack.code });
+    if (!exists) {
+      await IndustryPack.create(pack);
+      created += 1;
+    }
+  }
+  console.log(created ? `✔ Created ${created} industry packs` : '✔ Industry packs already exist — skipped');
+}
+
+/** Adds AI models that don't exist yet (never overwrites prices you edited). */
+async function seedModelPricing() {
+  let created = 0;
+  for (const m of DEFAULT_MODEL_PRICING) {
+    if (await ModelPricing.exists({ provider: m.provider, modelId: m.modelId })) continue;
+    const hasDefault = await ModelPricing.exists({ provider: m.provider, isDefault: true });
+    await ModelPricing.create({ ...m, isDefault: m.isDefault && !hasDefault });
+    created += 1;
+  }
+  console.log(created ? `✔ Created ${created} AI models (check prices & model IDs in Super admin → AI models)` : '✔ AI models already exist — skipped');
 }
 
 async function seedAdmin() {
@@ -92,6 +121,8 @@ async function seedAdmin() {
 try {
   await connectDB();
   await seedPlans();
+  await seedIndustryPacks();
+  await seedModelPricing();
   await seedAdmin();
 } catch (err) {
   console.error('❌ Seed failed:', err.message);

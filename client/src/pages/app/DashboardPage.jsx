@@ -4,6 +4,8 @@ import api from '../../lib/api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Card, PageHeader, EmptyState, Icon, StatCard } from '../../components/ui.jsx';
 import useDocumentTitle from '../../hooks/useDocumentTitle.js';
+import useTenantSettings from '../../hooks/useTenantSettings.js';
+import { StatusBadge } from '../../components/leads/LeadBits.jsx';
 
 function ChecklistItem({ done, title, description, to, phase }) {
   return (
@@ -35,17 +37,25 @@ export default function DashboardPage() {
     enabled: can('users:read'),
   });
 
+  const settings = useTenantSettings();
+  const canReadLeads = can('leads:read:all', 'leads:read:own');
+  const stats = useQuery({ queryKey: ['leads', 'stats'], queryFn: async () => (await api.get('/leads/stats')).data.data, enabled: canReadLeads });
+  const recent = useQuery({
+    queryKey: ['leads', 'list', 'recent'],
+    queryFn: async () => (await api.get('/leads', { params: { limit: 5, sort: '-createdAt' } })).data.data.items,
+    enabled: canReadLeads,
+  });
+  const setupDone = Boolean(settings.data?.industryPack?.packId || settings.data?.services?.length);
   const firstName = user.name.trim().split(/\s+/)[0];
 
   return (
     <>
       <PageHeader title={`Welcome, ${firstName}`} description={`Here's what's happening at ${tenant.name}.`} />
 
-      {/* Numbers stay empty until the modules that produce them exist — no fake data */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total leads" value="—" hint="Lead management arrives in Phase 9" />
-        <StatCard label="Qualified leads" value="—" hint="AI scoring arrives in Phase 14" />
-        <StatCard label="Follow-ups due" value="—" hint="Follow-ups arrive in Phase 19" />
+        <StatCard label="Total leads" value={canReadLeads ? stats.data?.total ?? '…' : '—'} hint={stats.data ? `${stats.data.newThisWeek} new this week` : undefined} />
+        <StatCard label="Qualified / negotiating" value={canReadLeads ? stats.data?.qualified ?? '…' : '—'} />
+        <StatCard label="Follow-ups due" value={canReadLeads ? stats.data?.followUpsDue ?? '…' : '—'} hint="Follow-up date today or earlier" />
         <StatCard label="Team members" value={can('users:read') ? team.data ?? '…' : '—'} />
       </div>
 
@@ -62,15 +72,26 @@ export default function DashboardPage() {
                   to="/app/settings/team"
                 />
               )}
-              <ChecklistItem title="Set up your company & industry" description="Services, ideal customers, keywords and hashtags." to="/app/settings/company" phase={7} />
-              <ChecklistItem title="Connect your tools" description="Add your own API keys securely." to="/app/settings/integrations" phase={8} />
-              <ChecklistItem title="Add your first leads" description="Manually, by CSV, or from discovery." to="/app/leads" phase={9} />
+              <ChecklistItem done={setupDone} title="Set up your company & industry" description="Services, ideal customers, keywords and hashtags." to="/app/settings/company" />
+              <ChecklistItem title="Connect your tools" description="Add your own API keys securely." to="/app/settings/integrations" />
+              <ChecklistItem done={(stats.data?.total ?? 0) > 0} title="Add your first leads" description="By hand, CSV import, or web discovery." to="/app/leads" />
             </ul>
           </Card>
         </div>
         <div className="lg:col-span-2">
-          <Card title="Recent leads">
-            <EmptyState icon="target" title="No leads yet" description="Once lead management is live, your newest and highest-scoring leads appear here." />
+          <Card title="Recent leads" action={canReadLeads && <Link to="/app/leads" className="text-xs text-brand-500 hover:underline">View all</Link>}>
+            {recent.data?.length ? (
+              <ul className="divide-y divide-white/5">
+                {recent.data.map((l) => (
+                  <li key={l.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <Link to={`/app/leads/${l.id}`} className="min-w-0 truncate text-sm hover:text-brand-500">{l.name}</Link>
+                    <StatusBadge status={l.status} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState icon="target" title="No leads yet" description="Add your first lead from the Leads page." />
+            )}
           </Card>
         </div>
       </div>

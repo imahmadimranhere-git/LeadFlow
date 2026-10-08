@@ -23,6 +23,9 @@ export const PERMISSIONS = Object.freeze({
   LEADS_READ_ALL: 'leads:read:all',
   LEADS_READ_OWN: 'leads:read:own',
   LEADS_WRITE: 'leads:write',
+  LEADS_ASSIGN: 'leads:assign', // give a lead to another team member
+  LEADS_DELETE: 'leads:delete', // delete / merge leads, manage the do-not-contact list
+  WATCHES_MANAGE: 'watches:manage', // create/edit hashtag watches (they spend the company's quota)
   EXPORT_RUN: 'export:run',
   AUDIT_READ: 'audit:read',
 });
@@ -33,7 +36,7 @@ const ALL = Object.values(P);
 export const ROLE_PERMISSIONS = Object.freeze({
   TENANT_OWNER: ALL,
   ADMIN: ALL.filter((p) => p !== P.BILLING_MANAGE),
-  MANAGER: [P.TENANT_READ, P.USERS_READ, P.LEADS_READ_ALL, P.LEADS_WRITE, P.EXPORT_RUN],
+  MANAGER: [P.TENANT_READ, P.USERS_READ, P.LEADS_READ_ALL, P.LEADS_WRITE, P.LEADS_ASSIGN, P.LEADS_DELETE, P.WATCHES_MANAGE, P.EXPORT_RUN],
   SALES: [P.TENANT_READ, P.LEADS_READ_OWN, P.LEADS_WRITE],
   VIEWER: [P.TENANT_READ, P.LEADS_READ_ALL],
 });

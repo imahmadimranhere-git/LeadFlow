@@ -1,11 +1,14 @@
 // Tenant (company) app layout.
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AppShell from './AppShell.jsx';
 import { visibleNav, BILLING_ONLY_PATHS } from './navigation.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { DropdownMenu, Icon, LoadingState, Badge } from '../components/ui.jsx';
 import { ROLE_LABELS } from '../utils/roles.js';
+import useTenantSettings from '../hooks/useTenantSettings.js';
+import useTenantLogo from '../hooks/useTenantLogo.js';
+import { applyAccent } from '../utils/color.js';
 
 function daysLeft(date) {
   if (!date) return null;
@@ -25,8 +28,22 @@ export default function AppLayout() {
   const location = useLocation();
 
   const billingOnly = access === 'BILLING_ONLY';
+  const settings = useTenantSettings();
+  const branding = settings.data?.branding;
+  const logoUrl = useTenantLogo(branding?.hasLogo, branding?.logoVersion);
+
+  // White-label: the company's brand colour replaces the default green (reset when leaving the app)
+  useEffect(() => {
+    applyAccent(branding?.accentColor || null);
+  }, [branding?.accentColor]);
+  useEffect(() => () => applyAccent(null), []);
+
   if (billingOnly && !BILLING_ONLY_PATHS.includes(location.pathname)) {
     return <Navigate to="/app/settings/billing" replace />;
+  }
+  // New company → owner/admin goes through the setup wizard first
+  if (!billingOnly && settings.data?.onboardingRequired && can('tenant:update')) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   const topBar = (
@@ -62,6 +79,7 @@ export default function AppLayout() {
     <AppShell
       groups={visibleNav(can, access)}
       subtitle={tenant.name}
+      brandLogoUrl={logoUrl}
       topBar={topBar}
       banner={
         billingOnly && (

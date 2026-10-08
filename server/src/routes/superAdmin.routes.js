@@ -9,6 +9,12 @@ import asyncHandler from '../utils/asyncHandler.js';
 import * as v from '../validators/superAdmin.validators.js';
 import * as bctrl from '../controllers/superAdminBilling.controller.js';
 import * as bv from '../validators/billing.validators.js';
+import * as packs from '../services/settings/industryPackAdminService.js';
+import { adminIntegrationStatus } from '../services/integrations/vaultService.js';
+import * as sv from '../validators/settings.validators.js';
+import { sendSuccess } from '../utils/response.js';
+import { requestMeta } from '../utils/requestMeta.js';
+import * as aiModels from '../services/ai/modelPricingService.js';
 
 const router = Router();
 
@@ -54,5 +60,34 @@ router.post('/invoices/:id/void', validate({ params: bv.idParams, body: bv.voidB
 router.get('/settings/billing', validate({}), asyncHandler(bctrl.getBillingSettings));
 router.put('/settings/billing', validate({ body: bv.billingSettingsBody }), asyncHandler(bctrl.updateBillingSettings));
 router.post('/billing/run-cycle', validate({}), asyncHandler(bctrl.runCycle));
+
+// ---- integrations: status only, never secrets ----
+router.get(
+  '/tenants/:id/integrations',
+  validate({ params: v.idParams }),
+  asyncHandler(async (req, res) => sendSuccess(res, { items: await adminIntegrationStatus(req.validated.params.id) }))
+);
+
+// ---- AI models & prices ----
+router.get('/ai-models', validate({}), asyncHandler(async (_req, res) => sendSuccess(res, { items: await aiModels.adminListModels() })));
+router.post('/ai-models', validate({ body: v.createAiModelBody }), asyncHandler(async (req, res) =>
+  sendSuccess(res, { model: await aiModels.adminCreateModel(req.admin, req.validated.body, requestMeta(req)) }, 201)));
+router.patch('/ai-models/:id', validate({ params: v.idParams, body: v.updateAiModelBody }), asyncHandler(async (req, res) =>
+  sendSuccess(res, { model: await aiModels.adminUpdateModel(req.admin, req.validated.params.id, req.validated.body, requestMeta(req)) })));
+
+// ---- industry packs ----
+router.get('/industry-packs', validate({}), asyncHandler(async (_req, res) => sendSuccess(res, { items: await packs.listAllPacks() })));
+router.post(
+  '/industry-packs',
+  validate({ body: sv.createPackBody }),
+  asyncHandler(async (req, res) => sendSuccess(res, { pack: await packs.createPack(req.admin, req.validated.body, requestMeta(req)) }, 201))
+);
+router.patch(
+  '/industry-packs/:id',
+  validate({ params: sv.idParams, body: sv.updatePackBody }),
+  asyncHandler(async (req, res) =>
+    sendSuccess(res, { pack: await packs.updatePack(req.admin, req.validated.params.id, req.validated.body, requestMeta(req)) })
+  )
+);
 
 export default router;

@@ -10,6 +10,8 @@ import env from '../config/env.js';
 import logger from '../config/logger.js';
 import { runAsSystem } from '../utils/tenantContext.js';
 import { runBillingCycle } from '../services/billing/subscriptionService.js';
+import { startDiscoveryRunner, stopDiscoveryRunner } from './discoveryRunner.js';
+import { checkMetaTokenExpiry } from '../services/integrations/meta/metaOAuthService.js';
 
 const HOUR = 60 * 60 * 1000;
 const timers = [];
@@ -39,10 +41,13 @@ export function startScheduler() {
     return;
   }
   every('billing-cycle', HOUR, () => runBillingCycle(new Date()));
+  every('meta-token-expiry', 24 * HOUR, () => checkMetaTokenExpiry(new Date()), 5 * 60_000);
+  startDiscoveryRunner(); // also runs due hashtag watches
   logger.info('⏱  Background jobs started');
 }
 
 export function stopScheduler() {
+  stopDiscoveryRunner();
   for (const t of timers) clearTimeout(t);
   timers.length = 0;
 }

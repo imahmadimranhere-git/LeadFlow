@@ -148,6 +148,29 @@ function BillingSection({ tenantId }) {
   );
 }
 
+
+const INTEGRATION_STATUS_COLOR = { CONNECTED: 'green', NOT_TESTED: 'blue', ERROR: 'red', DISABLED: 'gray' };
+
+function IntegrationsStatus({ tenantId }) {
+  const q = useQuery({ queryKey: ['admin', 'tenant-integrations', tenantId], queryFn: async () => (await adminApi.get(`/tenants/${tenantId}/integrations`)).data.data.items });
+  if (q.isLoading) return <Spinner />;
+  if (q.isError) return <Alert>{apiErrorMessage(q.error)}</Alert>;
+  if (q.data.length === 0) return <p className="text-sm text-white/40">No integrations connected.</p>;
+  return (
+    <ul className="divide-y divide-white/5 text-sm">
+      {q.data.map((i) => (
+        <li key={i.provider} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+          <span>{i.name}</span>
+          <span className="flex items-center gap-3 text-xs text-white/50">
+            last used {formatDateTime(i.lastUsedAt)}
+            <Badge color={INTEGRATION_STATUS_COLOR[i.status]}>{i.status}</Badge>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function TenantDetailPage() {
   const { id } = useParams();
   const queryClient = useQueryClient();
@@ -190,6 +213,7 @@ export default function TenantDetailPage() {
         <Card title="Change plan"><PlanForm tenant={tenant} onDone={refresh} /></Card>
       </div>
       <BillingSection tenantId={tenant.id} />
+      <Card title="Integrations (status only — secrets are never visible)"><IntegrationsStatus tenantId={tenant.id} /></Card>
       <Card title="Danger zone"><DeleteForm tenant={tenant} /></Card>
     </div>
   );

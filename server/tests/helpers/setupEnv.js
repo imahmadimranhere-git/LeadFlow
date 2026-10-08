@@ -10,3 +10,7 @@ process.env.ENCRYPTION_KEY = 'a'.repeat(64);
 process.env.RATE_LIMIT_MAX = '1000';
 process.env.LOG_LEVEL = 'fatal';
 process.env.AUTH_RATE_LIMIT_MAX = '10000';
+process.env.API_PUBLIC_URL = 'http://localhost:5099';
+process.env.META_APP_ID = '1234567890';
+process.env.META_APP_SECRET = 'test_meta_app_secret_value_123';
+process.env.AI_RATE_LIMIT_PER_MINUTE = '1000';
