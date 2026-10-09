@@ -42,3 +42,22 @@ export const previewBody = z
     options: z.object({ importPossibleDuplicates: z.boolean().optional(), assignToMe: z.boolean().optional() }).strict().optional(),
   })
   .strict();
+
+// ---- Local business (Google Places, live)
+export const localSearchBody = z
+  .object({
+    query: z.string().trim().min(2).max(200),
+    pageToken: z.string().max(2000).optional(),
+    regionCode: z.string().regex(/^[A-Za-z]{2}$/).transform((s) => s.toUpperCase()).optional(),
+  })
+  .strict();
+export const localImportBody = z
+  .object({
+    query: z.string().trim().max(200).optional(),
+    city: z.string().trim().max(60).optional(),
+    places: z
+      .array(z.object({ placeId: z.string().regex(/^[A-Za-z0-9_-]{10,300}$/, 'Invalid place id'), name: z.string().trim().min(1).max(150) }).strict())
+      .min(1)
+      .max(50),
+  })
+  .strict();

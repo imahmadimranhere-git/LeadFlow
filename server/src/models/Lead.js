@@ -59,6 +59,7 @@ const leadSchema = new mongoose.Schema(
     evidenceSnippet: str(1000),
     discoveryTimestamp: { type: Date, default: Date.now },
     sourcesHistory: { type: [sourceEntrySchema], default: [] },
+    placeId: { type: String, maxlength: 300, default: null }, // Google place ID (allowed to be stored by Google's terms)
 
     // ---- what they need (only what was actually stated/observed) ----
     description: str(3000),
@@ -75,6 +76,8 @@ const leadSchema = new mongoose.Schema(
     customFields: { type: Map, of: String, default: {} },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     followUpDate: { type: Date, default: null },
+    followUpNote: { type: String, trim: true, maxlength: 300, default: null },
+    followUpNotifiedFor: { type: Date, default: null, private: true }, // = followUpDate once the "due" notification went out
     lastActivityAt: { type: Date, default: Date.now },
 
     // ---- AI (filled from Phase 14; read-only for users) ----
@@ -83,6 +86,8 @@ const leadSchema = new mongoose.Schema(
     intent: { type: String, enum: [...LEAD_INTENTS, null], default: null },
     leadType: { type: String, enum: [...LEAD_TYPES, null], default: null },
     recommendedAction: str(500),
+    potentialService: str(120),
+    scoredAt: { type: Date, default: null },
 
     // ---- Hashtag Lead Capture Record (A28) — only for leads from posts / forms ----
     capture: { type: captureSchema, default: null },
@@ -106,8 +111,11 @@ leadSchema.index({ tenantId: 1, deletedAt: 1, createdAt: -1 });
 leadSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
 leadSchema.index({ tenantId: 1, pipelineStage: 1, lastActivityAt: -1 });
 leadSchema.index({ tenantId: 1, assignedTo: 1, createdAt: -1 });
+leadSchema.index({ followUpDate: 1 }, { partialFilterExpression: { followUpDate: { $type: 'date' } } });
 leadSchema.index({ tenantId: 1, tags: 1 });
 leadSchema.index({ tenantId: 1, score: -1 });
+// one lead per Google place per company
+leadSchema.index({ tenantId: 1, placeId: 1 }, { unique: true, partialFilterExpression: { placeId: { $type: 'string' }, deletedAt: { $type: 'null' } } });
 // "Is this page already a lead?" (Chrome extension)
 leadSchema.index({ tenantId: 1, postUrl: 1 }, { partialFilterExpression: { postUrl: { $type: 'string' } } });
 leadSchema.index({ tenantId: 1, 'sourcesHistory.sourceUrl': 1 });

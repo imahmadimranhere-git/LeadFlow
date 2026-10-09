@@ -6,6 +6,8 @@ import Lead from '../../models/Lead.js';
 import LeadActivity from '../../models/LeadActivity.js';
 import User from '../../models/User.js';
 import TenantSettings from '../../models/TenantSettings.js';
+import { notify } from '../notifications/notificationService.js';
+import { dayBounds, isValidTimeZone } from '../../utils/zonedTime.js';
 import ApiError from '../../utils/ApiError.js';
 import { hasPermission, PERMISSIONS as P } from '../../config/permissions.js';
 import { LEAD_LIMITS, LEAD_STATUSES, LEAD_PRIORITIES } from '../../config/leadOptions.js';
@@ -142,6 +144,7 @@ export async function createLead(auth, data) {
       lastActivityAt: now,
     });
     await activity(auth, lead._id, 'CREATED', '', { source: lead.source });
+    if (lead.assignedTo) await notifyAssigned(auth, [lead]);
     return lead.populate('assignedTo', 'name email');
   } catch (err) {
     await releaseQuota(auth.tenantId, 'leads'); // give the slot back
@@ -185,6 +188,26 @@ export async function listLeads(auth, q) {
     Lead.countDocuments(filter),
   ]);
   return { items: items.map((l) => l.toJSON()), total };
+}
+
+/** "A lead was assigned to you" — never to yourself; several leads at once = one notification. */
+async function notifyAssigned(auth, leads) {
+  const byUser = new Map();
+  for (const l of leads) {
+    if (!l.assignedTo || String(l.assignedTo._id || l.assignedTo) === String(auth.userId)) continue;
+    const k = String(l.assignedTo._id || l.assignedTo);
+    if (!byUser.has(k)) byUser.set(k, []);
+    byUser.get(k).push(l);
+  }
+  for (const [userId, list] of byUser) {
+    await notify({
+      userIds: [userId],
+      type: 'LEAD_ASSIGNED',
+      title: list.length === 1 ? `New lead for you: ${list[0].name}` : `${list.length} leads were assigned to you`,
+      link: list.length === 1 ? `/app/leads/${list[0]._id}` : '/app/leads?assignedTo=me',
+      leadId: list.length === 1 ? list[0]._id : null,
+    });
+  }
 }
 
 // ---------------------------------------------------------------- update
@@ -234,7 +257,10 @@ export async function updateLead(auth, id, data) {
 
   if (data.status && data.status !== before.status) await activity(auth, lead._id, 'STATUS_CHANGED', '', { from: before.status, to: data.status });
   if (data.pipelineStage && data.pipelineStage !== before.pipelineStage) await activity(auth, lead._id, 'STAGE_CHANGED', '', { from: before.pipelineStage, to: data.pipelineStage });
-  if (data.assignedTo !== undefined && String(data.assignedTo) !== String(before.assignedTo)) await activity(auth, lead._id, 'ASSIGNED', '', { to: data.assignedTo ? String(data.assignedTo) : null });
+  if (data.assignedTo !== undefined && String(data.assignedTo) !== String(before.assignedTo)) {
+    await activity(auth, lead._id, 'ASSIGNED', '', { to: data.assignedTo ? String(data.assignedTo) : null });
+    if (data.assignedTo) await notifyAssigned(auth, [lead]);
+  }
   const other = changes.filter((c) => !['status', 'pipelineStage', 'assignedTo'].includes(c));
   if (other.length) await activity(auth, lead._id, 'UPDATED', '', { fields: other });
 
@@ -376,6 +402,9 @@ export async function bulkUpdate(auth, { ids, action, value }) {
   if (affected.length) {
     await LeadActivity.insertMany(affected.map((d) => ({ leadId: d._id, type, meta: { bulk: true, action, value: value ?? null }, actorId: auth.userId })));
   }
+  if (action === 'assign' && value && affected.length) {
+    await notifyAssigned(auth, await Lead.find({ _id: { $in: affected.map((d) => d._id) } }).select('_id name assignedTo').limit(LEAD_LIMITS.bulk));
+  }
   if (action === 'delete') {
     await recordAudit({ actorType: 'USER', actorId: auth.userId, tenantId: auth.tenantId, action: 'lead.bulk_deleted', metadata: { count: result.modifiedCount } });
   }
@@ -385,11 +414,14 @@ export async function bulkUpdate(auth, { ids, action, value }) {
 export async function getStats(auth) {
   const scope = scopeFilter(auth);
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  // "due" = overdue + today in the COMPANY's time zone (same numbers as the Follow-ups page)
+  const tzSetting = (await TenantSettings.findOne({}).select('general'))?.general?.timezone;
+  const { end: endOfToday } = dayBounds(new Date(), isValidTimeZone(tzSetting) ? tzSetting : 'UTC');
   const [total, newThisWeek, qualified, followUpsDue, byStatus] = await Promise.all([
     Lead.countDocuments(scope),
     Lead.countDocuments({ ...scope, createdAt: { $gte: weekAgo } }),
     Lead.countDocuments({ ...scope, status: { $in: ['QUALIFIED', 'NEGOTIATION'] } }),
-    Lead.countDocuments({ ...scope, followUpDate: { $lte: new Date() }, status: { $nin: CLOSED_STATUSES } }),
+    Lead.countDocuments({ ...scope, followUpDate: { $lt: endOfToday }, status: { $nin: CLOSED_STATUSES } }),
     Lead.aggregate([{ $match: scope }, { $group: { _id: '$status', count: { $sum: 1 } } }]).then((rows) =>
       Object.fromEntries(rows.map((r) => [r._id, r.count]))
     ),

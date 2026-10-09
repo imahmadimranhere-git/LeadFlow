@@ -70,7 +70,7 @@ async function post(url, headers, body) {
 
 // OpenAI's strict mode doesn't accept every JSON-schema keyword → send a copy without length/size limits
 // (the server checks those itself with zod afterwards anyway).
-const OPENAI_UNSUPPORTED = new Set(['maxLength', 'minLength', 'maxItems', 'minItems', 'pattern', 'format']);
+const OPENAI_UNSUPPORTED = new Set(['maxLength', 'minLength', 'maxItems', 'minItems', 'pattern', 'format', 'minimum', 'maximum', 'multipleOf']);
 export function toOpenAiSchema(node) {
   if (Array.isArray(node)) return node.map(toOpenAiSchema);
   if (!node || typeof node !== 'object') return node;

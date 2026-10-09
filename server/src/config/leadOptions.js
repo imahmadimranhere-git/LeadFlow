@@ -8,7 +8,7 @@ export { CONNECTORS as CONNECTOR_SOURCES } from '../models/Plan.js';
 import { CONNECTORS } from '../models/Plan.js';
 export const LEAD_SOURCES = ['MANUAL', ...CONNECTORS];
 
-export const ACTIVITY_TYPES = ['CREATED', 'UPDATED', 'NOTE', 'STATUS_CHANGED', 'STAGE_CHANGED', 'ASSIGNED', 'SOURCE_ADDED', 'MERGED', 'DELETED', 'RESTORED'];
+export const ACTIVITY_TYPES = ['CREATED', 'UPDATED', 'NOTE', 'STATUS_CHANGED', 'STAGE_CHANGED', 'ASSIGNED', 'SOURCE_ADDED', 'MERGED', 'DELETED', 'RESTORED', 'MESSAGE_SENT', 'MESSAGE_REPLIED', 'UNSUBSCRIBED', 'FOLLOW_UP_SET', 'FOLLOW_UP_DONE'];
 export const DNC_TYPES = ['EMAIL', 'PHONE', 'DOMAIN', 'SOCIAL'];
 
 export const LEAD_LIMITS = Object.freeze({ tags: 20, customFields: 20, sourcesHistory: 50, bulk: 100, interestedItems: 20 });

@@ -1,6 +1,7 @@
 // /api/v1/settings — company profile, industry pack, ICP, discovery terms, brand voice, branding.
 // Everyone in the company can READ settings (sales people need services & brand voice later);
 // only roles with tenant:update can CHANGE them.
+import { salesSettingsBody } from '../validators/erp.validators.js';
 import express, { Router } from 'express';
 import * as ctrl from '../controllers/settings.controller.js';
 import validate from '../middleware/validate.js';
@@ -33,6 +34,9 @@ const SECTIONS = {
   pipeline: v.pipelineBody,
   scoring: v.scoringBody,
   ai: v.aiBody,
+  outreach: v.outreachBody,
+  general: v.generalBody,
+  sales: salesSettingsBody,
 };
 const SECTION_KEYS = { 'brand-voice': 'brandVoice' };
 for (const [path, schema] of Object.entries(SECTIONS)) {

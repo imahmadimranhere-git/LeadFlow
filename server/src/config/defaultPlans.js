@@ -14,7 +14,7 @@ export const DEFAULT_PLANS = [
     trialDays: 14,
     limits: { users: 2, leadsPerMonth: 100, discoverySearchesPerMonth: 20, aiRequestsPerMonth: 100, aiTokensPerMonth: 200000, hashtagWatches: 1, storageMb: 100, exportsPerMonth: 5 },
     connectors: base,
-    erpModules: [],
+    erpModules: ['SALES'], // lets trial users try quotes
     isPublic: false,
     sortOrder: 0,
   },

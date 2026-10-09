@@ -1,8 +1,10 @@
 // "Test connection" for each provider. Every outgoing request goes through SafeFetch.
 // Secrets are only placed in headers (never logged); provider responses are NOT shown to the user
 // (they might echo data back) — we turn the HTTP status into a short, safe message instead.
-import { safeFetch, validateUrl, SafeFetchError } from '../../utils/safeFetch.js';
+import { safeFetch, SafeFetchError } from '../../utils/safeFetch.js';
 import { listInstagramAccounts, MetaError } from './meta/metaClient.js';
+import { searchText, PlacesError } from '../leads/localBusiness/placesClient.js';
+import { createSmtpTransport } from './smtp.js';
 
 const TIMEOUT_MS = 10_000;
 
@@ -50,6 +52,16 @@ const TESTERS = {
       ...(c.organizationId && { 'openai-organization': c.organizationId }),
     }),
 
+  // Uses 1 Places text search (billed by Google per their pricing)
+  async GOOGLE_PLACES(s) {
+    try {
+      await searchText(s.apiKey, { textQuery: 'restaurant', pageSize: 1 });
+      return { ok: true, message: 'Connection successful' };
+    } catch (err) {
+      return { ok: false, message: err instanceof PlacesError ? err.message : 'Could not reach Google Places' };
+    }
+  },
+
   ANTHROPIC: (s) => httpCheck('https://api.anthropic.com/v1/models', { 'x-api-key': s.apiKey, 'anthropic-version': '2023-06-01' }),
 
   // Uses 1 search from your Brave quota
@@ -73,31 +85,13 @@ const TESTERS = {
   },
 
   async SMTP(s, c) {
-    // The host is tenant-supplied → resolve it ourselves, block internal addresses, connect to the checked IP
-    let target;
+    let transport;
     try {
-      target = await validateUrl(`http://${c.host}/`);
+      transport = await createSmtpTransport(s, c); // resolves + blocks internal hosts (SSRF)
     } catch (err) {
-      return fromError(err);
-    }
-    let nodemailer;
-    try {
-      nodemailer = (await import('nodemailer')).default;
-    } catch {
+      if (err instanceof SafeFetchError) return fromError(err);
       return { ok: false, message: 'Email package not installed on the server (run npm install)' };
     }
-    const port = Number(c.port);
-    const transport = nodemailer.createTransport({
-      host: target.address,
-      port,
-      secure: port === 465,
-      requireTLS: port !== 465, // never send the password over an unencrypted connection
-      auth: { user: c.username, pass: s.password },
-      tls: { servername: c.host }, // certificate must match the real host name
-      connectionTimeout: TIMEOUT_MS,
-      greetingTimeout: TIMEOUT_MS,
-      socketTimeout: TIMEOUT_MS,
-    });
     try {
       await transport.verify();
       return { ok: true, message: 'Connection successful' };
@@ -106,7 +100,7 @@ const TESTERS = {
       if (['ETIMEDOUT', 'ECONNECTION', 'ESOCKET', 'ECONNREFUSED'].includes(err.code)) return { ok: false, message: 'Could not reach the mail server on this port' };
       return { ok: false, message: 'The mail server refused the connection' };
     } finally {
-      transport.close();
+      transport.close?.();
     }
   },
 };

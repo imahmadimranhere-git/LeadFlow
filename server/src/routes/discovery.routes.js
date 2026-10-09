@@ -8,6 +8,7 @@ import { sendSuccess, sendPaginated } from '../utils/response.js';
 import { PERMISSIONS as P } from '../config/permissions.js';
 import * as discovery from '../services/leads/discovery/discoveryService.js';
 import * as v from '../validators/discovery.validators.js';
+import * as local from '../services/leads/localBusiness/localBusinessService.js';
 
 const router = Router();
 router.use(authenticate, authorize(P.LEADS_WRITE));
@@ -32,5 +33,9 @@ router.get('/runs/:id/candidates', validate({ params: v.idParams, query: v.candi
 
 router.post('/candidates/import', validate({ body: v.candidateIdsBody }), h(async (req, res) => sendSuccess(res, await discovery.importCandidates(req.auth, req.validated.body.ids))));
 router.post('/candidates/dismiss', validate({ body: v.candidateIdsBody }), h(async (req, res) => sendSuccess(res, await discovery.dismissCandidates(req.validated.body.ids))));
+
+// Local business (Google Places): live search, then import the chosen ones
+router.post('/local/search', validate({ body: v.localSearchBody }), h(async (req, res) => sendSuccess(res, await local.searchLocalBusinesses(req.auth, req.validated.body))));
+router.post('/local/import', validate({ body: v.localImportBody }), h(async (req, res) => sendSuccess(res, await local.importLocalBusinesses(req.auth, req.validated.body), 201)));
 
 export default router;

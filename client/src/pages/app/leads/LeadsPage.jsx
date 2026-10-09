@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ScoringBatchBar } from '../../../components/leads/ScoringPanel.jsx';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../../lib/api.js';
@@ -148,6 +149,7 @@ export default function LeadsPage() {
           ))}
         </div>
 
+        {canWrite && <ScoringBatchBar selectedIds={[...selected]} onStarted={() => setSelected(new Set())} />}
         {selected.size > 0 && canWrite && <BulkBar ids={[...selected]} stages={stages} onDone={() => { setSelected(new Set()); queryClient.invalidateQueries({ queryKey: ['leads'] }); }} />}
 
         {q.isLoading && <LoadingState rows={8} />}

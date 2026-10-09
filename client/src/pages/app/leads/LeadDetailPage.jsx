@@ -9,16 +9,20 @@ import useTenantSettings from '../../../hooks/useTenantSettings.js';
 import useDocumentTitle from '../../../hooks/useDocumentTitle.js';
 import { Card, Button, Field, SelectField, TextArea, Alert, Modal, LoadingState, ErrorState, Badge, Icon, Pager } from '../../../components/ui.jsx';
 import { TagInput } from '../../../components/forms.jsx';
-import { StatusBadge, PriorityBadge, ScoreBadge, SafetyFlags, ExternalLink } from '../../../components/leads/LeadBits.jsx';
+import { StatusBadge, PriorityBadge, SafetyFlags, ExternalLink } from '../../../components/leads/LeadBits.jsx';
 import { apiErrorMessage, apiFieldErrors } from '../../../utils/apiErrors.js';
 import { LEAD_STATUSES, PRIORITIES, LEAD_SOURCE_OPTIONS, SOURCE_LABEL, STATUS_LABEL } from '../../../utils/leadOptions.js';
 import { normalizeHashtag } from '../../../utils/settingsOptions.js';
 import { formatDate, formatDateTime } from '../../../utils/platform.js';
 import AiFactsCard from '../../../components/leads/AiFactsCard.jsx';
+import { ScoreCard } from '../../../components/leads/ScoringPanel.jsx';
+import LeadMessages from '../../../components/messages/LeadMessages.jsx';
+import WebsiteAuditCard from '../../../components/audit/WebsiteAuditCard.jsx';
+import FollowUpCard from '../../../components/followUps/FollowUpCard.jsx';
+import LeadSalesActions from '../../../components/erp/LeadSalesActions.jsx';
 import { AuthorLine, ContactList, CompletenessBadge, LAWFUL_BASES, CONSENT_STATUSES } from '../../../components/signals/CaptureBits.jsx';
 
 const EDIT_FIELDS = ['name', 'companyName', 'personName', 'email', 'phone', 'website', 'socialProfileUrl', 'city', 'country', 'industry', 'language', 'requiredService', 'budgetStated', 'description', 'businessProblem'];
-const toDateInput = (d) => (d ? new Date(d).toISOString().slice(0, 10) : '');
 
 function useLeadMutation(id) {
   const queryClient = useQueryClient();
@@ -164,7 +168,6 @@ function DetailsForm({ lead, canWrite }) {
   const [f, setF] = useState(() => ({
     ...Object.fromEntries(EDIT_FIELDS.map((k) => [k, lead[k] || ''])),
     tags: lead.tags || [],
-    followUpDate: toDateInput(lead.followUpDate),
     customFields: Object.entries(lead.customFields || {}),
   }));
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e?.target ? e.target.value : e }));
@@ -174,7 +177,6 @@ function DetailsForm({ lead, canWrite }) {
     e.preventDefault();
     const body = Object.fromEntries(EDIT_FIELDS.map((k) => [k, f[k]]));
     body.tags = f.tags;
-    body.followUpDate = f.followUpDate ? new Date(f.followUpDate).toISOString() : null;
     body.customFields = Object.fromEntries(f.customFields.filter(([k]) => k.trim()).map(([k, v]) => [k.trim(), v]));
     save.mutate(body, { onSuccess: () => toast.success('Lead saved') });
   }
@@ -197,7 +199,6 @@ function DetailsForm({ lead, canWrite }) {
               <Field key={k} label={label} name={`lead-${k}`} value={f[k]} onChange={set(k)} error={errs[k]} />
             ))}
             <Field label="Budget (only if they actually said it)" name="lead-budget" maxLength={120} value={f.budgetStated} onChange={set('budgetStated')} />
-            <Field label="Follow-up date" name="lead-followup" type="date" value={f.followUpDate} onChange={set('followUpDate')} />
           </div>
           <TextArea label="Description" name="lead-description" rows={3} maxLength={3000} value={f.description} onChange={set('description')} />
           <TextArea label="Business problem (observed / stated)" name="lead-problem" rows={2} maxLength={1000} value={f.businessProblem} onChange={set('businessProblem')} />
@@ -324,7 +325,10 @@ export default function LeadDetailPage() {
           <p className="mt-1 text-sm text-white/50">{[lead.companyName !== lead.name && lead.companyName, lead.personName, lead.city, lead.country].filter(Boolean).join(' · ')}</p>
           <div className="mt-2 flex flex-wrap gap-2"><StatusBadge status={lead.status} /><PriorityBadge priority={lead.priority} /><SafetyFlags lead={lead} /></div>
         </div>
-        {can('leads:delete') && <Button variant="danger" onClick={() => setConfirmDelete(true)}>Delete</Button>}
+        <div className="flex flex-wrap gap-2">
+          {canWrite && <LeadSalesActions lead={lead} />}
+          {can('leads:delete') && <Button variant="danger" onClick={() => setConfirmDelete(true)}>Delete</Button>}
+        </div>
       </div>
 
       {lead.suspectedInjection && (
@@ -336,6 +340,9 @@ export default function LeadDetailPage() {
           <WhyDiscovered lead={lead} canWrite={canWrite} />
           <CaptureRecord capture={lead.capture} />
           <AiFactsCard leadId={lead.id} canWrite={canWrite} />
+          <FollowUpCard lead={lead} canWrite={canWrite} />
+          <WebsiteAuditCard lead={lead} canWrite={canWrite} />
+          <LeadMessages lead={lead} canWrite={canWrite} />
           <DetailsForm key={lead.updatedAt} lead={lead} canWrite={canWrite} />
           <Activity leadId={lead.id} canWrite={canWrite} />
         </div>
@@ -368,10 +375,7 @@ export default function LeadDetailPage() {
             </dl>
             {lead.doNotContact && <p className="mt-3 text-xs text-red-300">On your do-not-contact list — outreach is blocked.</p>}
           </Card>
-          <Card title="AI analysis">
-            <div className="flex items-center gap-3"><ScoreBadge score={lead.score} /><span className="text-sm text-white/50">{lead.score === null ? 'Not scored yet' : lead.leadType}</span></div>
-            {lead.scoreReason ? <p className="mt-3 whitespace-pre-wrap text-sm text-white/70">{lead.scoreReason}</p> : <p className="mt-3 text-xs text-white/40">Evidence-based AI scoring arrives in Phase 14.</p>}
-          </Card>
+          <ScoreCard lead={lead} canWrite={canWrite} />
           <Card title="Info">
             <dl className="space-y-2 text-xs text-white/50">
               <div className="flex justify-between"><dt>Created</dt><dd>{formatDateTime(lead.createdAt)}</dd></div>

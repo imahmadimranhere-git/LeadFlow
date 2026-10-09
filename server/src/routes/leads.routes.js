@@ -15,6 +15,8 @@ import rateLimit from 'express-rate-limit';
 import env from '../config/env.js';
 import { z } from '../validators/common.js';
 import { analyzeEvidence, latestAnalyses } from '../services/ai/evidenceFacts.js';
+import { scoreLead, latestScore } from '../services/ai/scoring/leadScoring.js';
+import { auditLead, listLeadAudits } from '../services/websiteAudit/websiteAuditService.js';
 
 const router = Router();
 router.use(authenticate);
@@ -74,8 +76,26 @@ const aiLimiter = rateLimit({
 const aiRunBody = z.object({ force: z.boolean().default(false) }).strict();
 router.post('/:id/ai/evidence-facts', canWrite, aiLimiter, validate({ params: v.idParams, body: aiRunBody }), h(async (req, res) =>
   sendSuccess(res, { analysis: await analyzeEvidence(req.auth, req.validated.params.id, req.validated.body) })));
+router.post('/:id/ai/score', canWrite, aiLimiter, validate({ params: v.idParams, body: aiRunBody }), h(async (req, res) =>
+  sendSuccess(res, { analysis: await scoreLead(req.auth, req.validated.params.id, req.validated.body) })));
+router.get('/:id/ai/score', canRead, validate({ params: v.idParams }), h(async (req, res) =>
+  sendSuccess(res, { analysis: await latestScore(req.auth, req.validated.params.id) })));
 router.get('/:id/ai/analyses', canRead, validate({ params: v.idParams }), h(async (req, res) =>
   sendSuccess(res, { items: await latestAnalyses(req.auth, req.validated.params.id) })));
+
+// ---- website audit (fetches the lead's public site → limited per company)
+const auditLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: Math.max(20, Math.floor(env.AUTH_RATE_LIMIT_MAX / 2)),
+  keyGenerator: (req) => `audit:${req.auth.tenantId}`,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({ success: false, message: 'Too many website checks — please wait a few minutes.', errors: [] }),
+});
+router.post('/:id/website-audit', canWrite, auditLimiter, validate({ params: v.idParams }), h(async (req, res) =>
+  sendSuccess(res, { audit: await auditLead(req.auth, req.validated.params.id) }, 201)));
+router.get('/:id/website-audits', canRead, validate({ params: v.idParams }), h(async (req, res) =>
+  sendSuccess(res, { items: await listLeadAudits(req.auth, req.validated.params.id) })));
 
 router.post('/:id/notes', canWrite, validate({ params: v.idParams, body: v.noteBody }), h(async (req, res) =>
   sendSuccess(res, { note: await leads.addNote(req.auth, req.validated.params.id, req.validated.body.body) }, 201)));

@@ -25,7 +25,12 @@ export const PERMISSIONS = Object.freeze({
   LEADS_WRITE: 'leads:write',
   LEADS_ASSIGN: 'leads:assign', // give a lead to another team member
   LEADS_DELETE: 'leads:delete', // delete / merge leads, manage the do-not-contact list
+  MESSAGES_APPROVE: 'messages:approve', // approve/reject outreach messages, manage templates
   WATCHES_MANAGE: 'watches:manage', // create/edit hashtag watches (they spend the company's quota)
+  CATALOG_MANAGE: 'catalog:manage', // create/edit items & prices, give discounts above the sales limit
+  INVOICES_MANAGE: 'invoices:manage', // create/issue/void invoices, record payments (money!)
+  ACCOUNTING_MANAGE: 'accounting:manage', // expenses + financial reports (owner/admin only by default)
+  PROJECTS_MANAGE: 'projects:manage', // create projects, set members/rates/budgets, edit anyone's time
   EXPORT_RUN: 'export:run',
   AUDIT_READ: 'audit:read',
 });
@@ -36,7 +41,7 @@ const ALL = Object.values(P);
 export const ROLE_PERMISSIONS = Object.freeze({
   TENANT_OWNER: ALL,
   ADMIN: ALL.filter((p) => p !== P.BILLING_MANAGE),
-  MANAGER: [P.TENANT_READ, P.USERS_READ, P.LEADS_READ_ALL, P.LEADS_WRITE, P.LEADS_ASSIGN, P.LEADS_DELETE, P.WATCHES_MANAGE, P.EXPORT_RUN],
+  MANAGER: [P.TENANT_READ, P.USERS_READ, P.LEADS_READ_ALL, P.LEADS_WRITE, P.LEADS_ASSIGN, P.LEADS_DELETE, P.WATCHES_MANAGE, P.MESSAGES_APPROVE, P.CATALOG_MANAGE, P.INVOICES_MANAGE, P.PROJECTS_MANAGE, P.EXPORT_RUN],
   SALES: [P.TENANT_READ, P.LEADS_READ_OWN, P.LEADS_WRITE],
   VIEWER: [P.TENANT_READ, P.LEADS_READ_ALL],
 });

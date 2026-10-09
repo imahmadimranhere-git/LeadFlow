@@ -1,4 +1,5 @@
 // Validation for Tenant Settings and Industry Packs (same rules for both).
+import { isValidTimeZone } from '../utils/zonedTime.js';
 import { z, email, httpUrl, safeText, objectId, idParams } from './common.js';
 import {
   LEAD_SOURCES, BRAND_TONES, COMPANY_SIZES, TEMPLATE_CHANNELS, SCORING_FACTORS, LIST_LIMITS,
@@ -110,6 +111,23 @@ export const aiBody = z
     temperature: z.number().min(0).max(1).nullable().optional(),
     maxOutputTokens: z.number().int().min(200).max(4000).optional(),
     maxRetries: z.number().int().min(0).max(2).optional(),
+  })
+  .strict()
+  .refine((d) => Object.keys(d).length > 0, 'Nothing to update');
+
+export const outreachBody = z
+  .object({
+    dailyEmailLimit: z.number().int().min(1).max(1000).optional(),
+    emailSignature: z.string().trim().max(500).optional(),
+    postalAddress: z.string().trim().max(200).optional(),
+  })
+  .strict()
+  .refine((d) => Object.keys(d).length > 0, 'Nothing to update');
+
+export const generalBody = z
+  .object({
+    timezone: z.string().trim().max(64).refine(isValidTimeZone, 'Unknown time zone (use a name like Asia/Karachi)').optional(),
+    digestHour: z.number().int().min(0).max(23).optional(),
   })
   .strict()
   .refine((d) => Object.keys(d).length > 0, 'Nothing to update');

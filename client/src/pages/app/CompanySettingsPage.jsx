@@ -7,6 +7,10 @@ import { TagInput } from '../../components/forms.jsx';
 import IndustryPackPicker from '../../components/settings/IndustryPackPicker.jsx';
 import LogoUploader from '../../components/settings/LogoUploader.jsx';
 import AiSettingsForm from '../../components/settings/AiSettingsForm.jsx';
+import ScoringWeightsForm from '../../components/settings/ScoringWeightsForm.jsx';
+import OutreachSettingsForm from '../../components/settings/OutreachSettingsForm.jsx';
+import GeneralSettingsForm from '../../components/settings/GeneralSettingsForm.jsx';
+import SalesSettingsForm from '../../components/settings/SalesSettingsForm.jsx';
 import { ProfileForm, ServicesForm, IcpForm, DiscoveryForm, BrandForm } from '../../components/settings/sectionForms.jsx';
 import { useMutation } from '@tanstack/react-query';
 import api from '../../lib/api.js';
@@ -23,6 +27,10 @@ const TABS = [
   ['discovery', 'Discovery'],
   ['brand', 'Brand'],
   ['pipeline', 'Pipeline'],
+  ['scoring', 'Scoring'],
+  ['outreach', 'Outreach'],
+  ['sales', 'Sales & quotes'],
+  ['general', 'Time zone'],
   ['ai', 'AI'],
   ['industry', 'Industry pack'],
 ];
@@ -117,6 +125,10 @@ export default function CompanySettingsPage() {
             <Card title="Starter message templates"><StarterTemplates templates={s.messageTemplates} /></Card>
           </>
         )}
+        {tab === 'scoring' && <Card title="Lead scoring weights"><ScoringWeightsForm {...props} /></Card>}
+        {tab === 'outreach' && <Card title="Outreach & email"><OutreachSettingsForm {...props} /></Card>}
+        {tab === 'sales' && <Card title="Sales & quotes"><SalesSettingsForm {...props} /></Card>}
+        {tab === 'general' && <Card title="Time zone & reminders"><GeneralSettingsForm {...props} /></Card>}
         {tab === 'ai' && <Card title="AI settings"><AiSettingsForm {...props} /></Card>}
         {tab === 'industry' && (
           <Card title="Industry pack">

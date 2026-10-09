@@ -31,12 +31,12 @@ class ElsewhereConnector extends BaseConnector {
 const factories = {
   GOOGLE_WEB: () => new WebSearchConnector(),
   CSV: () => new PlannedConnector('CSV', 'Use the CSV import tab.', null),
-  LOCAL_BUSINESS: () => new PlannedConnector('LOCAL_BUSINESS', 'Needs an official places/business data API (e.g. Google Places) — added as its own integration later.', 16),
+  LOCAL_BUSINESS: () => new ElsewhereConnector('LOCAL_BUSINESS', 'Google Places business search — results are shown live (Google’s terms limit storing them); you import the ones you want.', '/app/discovery?tab=local'),
   INSTAGRAM: () => new ElsewhereConnector('INSTAGRAM', 'Official Instagram hashtag search runs on a schedule — set it up in Hashtag watches (needs Instagram connected).', '/app/hashtag-watches'),
   FACEBOOK: () => new ElsewhereConnector('FACEBOOK', 'Meta offers NO public Facebook post/hashtag search. Facebook Lead Ads forms can reach you through the website-forms webhook (e.g. via Zapier or Make).', '/app/settings/integrations'),
   LINKEDIN: () => new ElsewhereConnector('LINKEDIN', 'LinkedIn has no public post/people search API for normal apps. Save LinkedIn posts and profiles you are viewing with the Chrome extension.', '/app/settings/extension'),
   CHROME_EXTENSION: () => new ElsewhereConnector('CHROME_EXTENSION', 'Save a lead from the page you are looking at — Instagram, Facebook, LinkedIn or any website.', '/app/settings/extension'),
-  DATA_PROVIDER: () => new PlannedConnector('DATA_PROVIDER', 'Your authorized data provider (Integrations) — mapping per provider.', 16),
+  DATA_PROVIDER: () => new PlannedConnector('DATA_PROVIDER', 'Your authorized data provider — every provider has its own data format and licence, so each one is added on request (CSV import works with any provider today).', null),
   WEBHOOK: () => new ElsewhereConnector('WEBHOOK', 'Website forms, WordPress, Zapier or Make send leads to your private signed URL → Signals inbox.', '/app/settings/integrations'),
 };
 

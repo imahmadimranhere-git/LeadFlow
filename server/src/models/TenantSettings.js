@@ -3,6 +3,9 @@
 import mongoose from '../config/mongoose.js';
 import tenantScopePlugin from './plugins/tenantScope.js';
 import { templateSchema, scoringWeightsSchema } from './IndustryPack.js';
+import { DEFAULT_TIMEZONE, DEFAULT_DIGEST_HOUR } from '../config/notificationOptions.js';
+import { CURRENCIES } from './Plan.js';
+import { DEFAULT_EXPENSE_CATEGORIES } from '../config/erpOptions.js';
 import {
   LEAD_SOURCES, BRAND_TONES, COMPANY_SIZES, DEFAULT_SCORING_WEIGHTS, DEFAULT_PIPELINE_STAGES,
 } from '../config/settingsOptions.js';
@@ -78,6 +81,31 @@ const tenantSettingsSchema = new mongoose.Schema(
       temperature: { type: Number, min: 0, max: 1, default: null }, // null = provider default
       maxOutputTokens: { type: Number, min: 200, max: 4000, default: 1000 },
       maxRetries: { type: Number, min: 0, max: 2, default: 1 },
+    },
+    general: {
+      timezone: { type: String, maxlength: 64, default: DEFAULT_TIMEZONE }, // "today" for follow-ups + digest time
+      digestHour: { type: Number, min: 0, max: 23, default: DEFAULT_DIGEST_HOUR }, // daily follow-up email, local hour
+    },
+    sales: {
+      currency: { type: String, enum: CURRENCIES, default: 'USD' }, // prices + new quotes
+      defaultTaxBp: { type: Number, min: 0, max: 10000, default: 0 }, // e.g. 1700 = 17 %
+      salesMaxDiscountBp: { type: Number, min: 0, max: 10000, default: 1000 }, // Sales role: max discount without a manager
+      quoteValidityDays: { type: Number, min: 1, max: 365, default: 15 },
+      quotePrefix: { type: String, maxlength: 6, default: 'Q', match: /^[A-Z]{1,6}$/ },
+      quoteTerms: { type: String, trim: true, maxlength: 3000, default: '' },
+      taxId: { type: String, trim: true, maxlength: 60, default: '' }, // NTN / VAT no. printed on quotes
+      invoicePrefix: { type: String, maxlength: 6, default: 'INV', match: /^[A-Z]{1,6}$/ },
+      paymentTermsDays: { type: Number, min: 0, max: 365, default: 15 }, // due date = issue date + this
+      invoiceFooter: { type: String, trim: true, maxlength: 2000, default: '' }, // e.g. bank account details
+    },
+    accounting: {
+      expenseCategories: { type: [{ type: String, trim: true, maxlength: 40 }], default: () => [...DEFAULT_EXPENSE_CATEGORIES] },
+      lockedUntil: { type: String, default: null, match: /^\d{4}-\d{2}-\d{2}$/ }, // books closed up to this day (no changes on or before)
+    },
+    outreach: {
+      dailyEmailLimit: { type: Number, min: 1, max: 1000, default: 100 }, // protects your mailbox reputation
+      emailSignature: { type: String, trim: true, maxlength: 500, default: '' },
+      postalAddress: { type: String, trim: true, maxlength: 200, default: '' }, // shown in email footers (many laws require it)
     },
     messageTemplates: { type: [templateSchema], default: [] }, // starter templates; Phase 15 moves them into the Templates module
   },

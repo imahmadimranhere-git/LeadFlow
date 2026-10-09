@@ -77,6 +77,11 @@ export async function updateSection(actor, section, data) {
     case 'scoring':
       settings.scoringWeights = data.scoringWeights;
       break;
+    case 'outreach':
+    case 'general':
+    case 'sales':
+      for (const [k, v] of Object.entries(data)) settings.set(`${section}.${k}`, v);
+      break;
     case 'ai': {
       const next = { ...(settings.ai?.toObject ? settings.ai.toObject() : settings.ai || {}), ...data };
       if (next.provider === 'AUTO' || !next.provider) next.model = null; // Auto always uses the default models
@@ -93,6 +98,11 @@ export async function updateSection(actor, section, data) {
 
   await settings.save();
   await audit(actor, `settings.${section}_updated`, { fields: Object.keys(data) });
+  if (section === 'scoring') {
+    // new weights → every scored lead is recalculated from its saved factors (no AI call, no cost)
+    const { recalculateScores } = await import('../ai/scoring/leadScoring.js');
+    await recalculateScores(actor);
+  }
   return getSettings(actor.tenantId);
 }
 

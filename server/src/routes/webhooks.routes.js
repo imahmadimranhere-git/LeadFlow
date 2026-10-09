@@ -6,6 +6,7 @@ import { sendSuccess } from '../utils/response.js';
 import { requestMeta } from '../utils/requestMeta.js';
 import { handlePaymentWebhook } from '../services/billing/webhookService.js';
 import { receiveInboundLead } from '../services/signals/inboundWebhookService.js';
+import { verifySubscription, receiveWhatsAppWebhook } from '../services/conversations/whatsappInbound.js';
 
 const router = Router();
 
@@ -47,6 +48,22 @@ router.post(
     const result = await receiveInboundLead(req.params.publicKey, req.body, req.headers, requestMeta(req));
     return sendSuccess(res, result, result.duplicate ? 200 : 201);
   })
+);
+
+// WhatsApp Cloud API (Meta). GET = one-time subscription check, POST = messages/statuses (signed).
+router.get(
+  '/whatsapp',
+  webhookLimiter,
+  asyncHandler(async (req, res) => {
+    const challenge = await verifySubscription(req.query);
+    res.type('text/plain').status(200).send(challenge);
+  })
+);
+router.post(
+  '/whatsapp',
+  webhookLimiter,
+  express.raw({ type: '*/*', limit: '512kb' }),
+  asyncHandler(async (req, res) => sendSuccess(res, await receiveWhatsAppWebhook(req.body, req.headers, requestMeta(req))))
 );
 
 export default router;

@@ -23,6 +23,15 @@ export const INTEGRATION_PROVIDERS = {
     secretFields: [{ key: 'apiKey', label: 'API key', pattern: '^sk-ant-[A-Za-z0-9_\\-]{20,250}$', patternHint: 'Starts with sk-ant-' }],
     configFields: [],
   },
+  GOOGLE_PLACES: {
+    name: 'Google Places API (New)',
+    category: 'SEARCH',
+    description: 'Official Google Maps business search for Local Business discovery. Results are shown live; Google’s terms limit storing them.',
+    docsUrl: 'https://developers.google.com/maps/documentation/places/web-service/text-search',
+    connectType: 'API_KEY',
+    secretFields: [{ key: 'apiKey', label: 'API key', pattern: '^AIza[0-9A-Za-z_\\-]{35}$', patternHint: 'Starts with AIza (39 characters)' }],
+    configFields: [],
+  },
   BRAVE_SEARCH: {
     name: 'Brave Search API',
     category: 'SEARCH',
@@ -60,13 +69,17 @@ export const INTEGRATION_PROVIDERS = {
   WHATSAPP_CLOUD: {
     name: 'WhatsApp Cloud API',
     category: 'MESSAGING',
-    description: 'Official Meta WhatsApp Business API (templates + 24-hour customer service window).',
+    description: 'Official Meta WhatsApp Business API. Receive customer messages in Conversations and reply within the 24-hour window. Webhook URL: <your API address>/api/v1/webhooks/whatsapp',
     docsUrl: 'https://developers.facebook.com/docs/whatsapp/cloud-api',
     connectType: 'API_KEY',
-    secretFields: [{ key: 'accessToken', label: 'Permanent access token', pattern: '^[A-Za-z0-9]{50,600}$' }],
+    secretFields: [
+      { key: 'accessToken', label: 'Permanent access token', pattern: '^[A-Za-z0-9]{50,600}$' },
+      { key: 'appSecret', label: 'App secret (needed to receive messages)', required: false, pattern: '^[a-f0-9]{32}$', patternHint: '32 characters from Meta app → Settings → Basic' },
+    ],
     configFields: [
       { key: 'phoneNumberId', label: 'Phone number ID', required: true, pattern: '^[0-9]{6,30}$' },
       { key: 'businessAccountId', label: 'WhatsApp Business Account ID', required: true, pattern: '^[0-9]{6,30}$' },
+      { key: 'webhookVerifyToken', label: 'Webhook verify token (any random text, 16+ characters)', required: false, pattern: '^[A-Za-z0-9_-]{16,64}$' },
     ],
   },
   DATA_PROVIDER: {

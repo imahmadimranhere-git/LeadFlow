@@ -9,6 +9,7 @@ import { ROLE_LABELS } from '../utils/roles.js';
 import useTenantSettings from '../hooks/useTenantSettings.js';
 import useTenantLogo from '../hooks/useTenantLogo.js';
 import { applyAccent } from '../utils/color.js';
+import NotificationBell from '../components/notifications/NotificationBell.jsx';
 
 function daysLeft(date) {
   if (!date) return null;
@@ -52,6 +53,7 @@ export default function AppLayout() {
         <p className="truncate text-sm font-medium">{tenant.name}</p>
       </div>
       <TrialBadge tenant={tenant} />
+      {!billingOnly && <NotificationBell />}
       <DropdownMenu
         label="Account menu"
         trigger={

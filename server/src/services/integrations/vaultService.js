@@ -75,7 +75,7 @@ export async function saveIntegration(actor, provider, { label, credentials = {}
   }
 
   const missing = [
-    ...meta.secretFields.filter((f) => !secrets[f.key]).map((f) => f.key),
+    ...meta.secretFields.filter((f) => f.required !== false && !secrets[f.key]).map((f) => f.key),
     ...meta.configFields.filter((f) => f.required && !mergedConfig[f.key]).map((f) => f.key),
   ];
   if (missing.length) {
@@ -85,7 +85,7 @@ export async function saveIntegration(actor, provider, { label, credentials = {}
   const update = {
     label: label ?? existing?.label ?? '',
     encryptedCredentials: encrypt(JSON.stringify(secrets)),
-    maskedHints: Object.fromEntries(meta.secretFields.map((f) => [f.key, maskSecret(secrets[f.key])])),
+    maskedHints: Object.fromEntries(meta.secretFields.filter((f) => secrets[f.key]).map((f) => [f.key, maskSecret(secrets[f.key])])),
     config: mergedConfig,
     status: 'NOT_TESTED', // any change must be re-tested
     lastError: null,

@@ -3,7 +3,7 @@
 import mongoose from '../config/mongoose.js';
 import tenantScopePlugin from './plugins/tenantScope.js';
 
-export const ANALYSIS_TYPES = ['EVIDENCE_FACTS'];
+export const ANALYSIS_TYPES = ['EVIDENCE_FACTS', 'LEAD_SCORE'];
 
 const aiAnalysisSchema = new mongoose.Schema(
   {

@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import useDocumentTitle from '../../../hooks/useDocumentTitle.js';
 import { PageHeader } from '../../../components/ui.jsx';
 import WebDiscovery from './WebDiscovery.jsx';
 import CsvImport from './CsvImport.jsx';
+import LocalBusiness from './LocalBusiness.jsx';
 
-const TABS = [['web', 'Web search'], ['csv', 'CSV import']];
+const TABS = [['web', 'Web search'], ['local', 'Local businesses'], ['csv', 'CSV import']];
 
 export default function DiscoveryPage() {
   useDocumentTitle('Discovery');
-  const [tab, setTab] = useState('web');
+  const [params, setParams] = useSearchParams();
+  const tab = TABS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'web';
+  const setTab = (k) => setParams(k === 'web' ? {} : { tab: k }, { replace: true });
   return (
     <>
       <PageHeader title="Discovery" description="Find new leads with official search APIs, or import your own list." />
@@ -19,7 +22,9 @@ export default function DiscoveryPage() {
           </button>
         ))}
       </div>
-      {tab === 'web' ? <WebDiscovery /> : <CsvImport />}
+      {tab === 'web' && <WebDiscovery />}
+      {tab === 'local' && <LocalBusiness />}
+      {tab === 'csv' && <CsvImport />}
     </>
   );
 }

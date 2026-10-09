@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 // Reusable UI pieces. Bigger components live in their own files and are re-exported here,
 // so pages can import everything from one place: import { Button, Modal } from '../components/ui.jsx'
 export { LoadingState, EmptyState, ErrorState, Skeleton } from './states.jsx';
@@ -158,7 +159,7 @@ export const TENANT_STATUS_COLOR = { TRIAL: 'blue', ACTIVE: 'green', PAST_DUE: '
 export const SUBSCRIPTION_STATUS_COLOR = { TRIALING: 'blue', ACTIVE: 'green', PAST_DUE: 'amber', SUSPENDED: 'red', CANCELLED: 'gray' };
 export const INVOICE_STATUS_COLOR = { OPEN: 'amber', PAID: 'green', VOID: 'gray' };
 
-export function TextArea({ label, error, hint, id, rows = 4, ...props }) {
+export const TextArea = forwardRef(function TextArea({ label, error, hint, id, rows = 4, ...props }, ref) {
   const inputId = id || props.name;
   return (
     <div className="space-y-1.5">
@@ -168,6 +169,7 @@ export function TextArea({ label, error, hint, id, rows = 4, ...props }) {
         </label>
       )}
       <textarea
+        ref={ref}
         id={inputId}
         rows={rows}
         {...props}
@@ -176,7 +178,7 @@ export function TextArea({ label, error, hint, id, rows = 4, ...props }) {
       {error ? <p className="text-xs text-red-400">{error}</p> : hint && <p className="text-xs text-white/40">{hint}</p>}
     </div>
   );
-}
+});
 
 export function ProgressBar({ value, max }) {
   const unlimited = max === -1;
