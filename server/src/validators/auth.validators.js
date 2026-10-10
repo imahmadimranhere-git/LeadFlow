@@ -40,3 +40,24 @@ export const changePasswordSchema = z
     message: 'New password must be different',
     path: ['newPassword'],
   });
+
+// ---- Phase 27: account security
+const linkToken = z.string().regex(/^[A-Za-z0-9_-]{20,200}$/, 'Invalid link');
+const totpCode = z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code');
+const recoveryCode = z.string().trim().min(10).max(20);
+
+export const loginMfaSchema = z
+  .object({ mfaToken: z.string().min(20).max(2000), code: totpCode.optional(), recoveryCode: recoveryCode.optional() })
+  .strict()
+  .refine((d) => Boolean(d.code) !== Boolean(d.recoveryCode), { message: 'Enter the 6-digit code OR a recovery code', path: ['code'] });
+export const forgotPasswordSchema = z.object({ email }).strict();
+export const resetPasswordSchema = z.object({ token: linkToken, newPassword: strongPassword }).strict();
+export const verifyEmailSchema = z.object({ token: linkToken }).strict();
+export const sessionParams = z.object({ id: z.string().uuid() }).strict();
+export const mfaSetupSchema = z.object({ password: z.string().min(1).max(200) }).strict();
+export const mfaEnableSchema = z.object({ code: totpCode }).strict();
+export const mfaDisableSchema = z
+  .object({ password: z.string().min(1).max(200), code: totpCode.optional(), recoveryCode: recoveryCode.optional() })
+  .strict()
+  .refine((d) => Boolean(d.code) !== Boolean(d.recoveryCode), { message: 'Enter the 6-digit code OR a recovery code', path: ['code'] });
+export const mfaRecoverySchema = z.object({ password: z.string().min(1).max(200), code: totpCode }).strict();

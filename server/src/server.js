@@ -1,10 +1,14 @@
 import env from './config/env.js'; // validates env FIRST
 import logger from './config/logger.js';
 import { connectDB, disconnectDB } from './config/db.js';
+import { ensureIndexes } from './config/indexes.js';
+import { setIndexReport } from './monitoring/monitorState.js';
 import app from './app.js';
 import { startScheduler, stopScheduler } from './jobs/scheduler.js';
 
 await connectDB();
+// production: autoIndex is off → build any missing index in the background (never blocks start-up)
+ensureIndexes().then(setIndexReport).catch((err) => logger.error({ err: err.message }, 'ensureIndexes failed'));
 
 const server = app.listen(env.PORT, () => {
   logger.info(`🚀 API running on http://localhost:${env.PORT}/api/v1/health (${env.NODE_ENV})`);

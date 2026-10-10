@@ -25,6 +25,7 @@ const tenantSchema = new mongoose.Schema(
     statusReason: { type: String, trim: true, maxlength: 500, default: null },
     suspensionType: { type: String, enum: [...SUSPENSION_TYPES, null], default: null },
     statusChangedAt: { type: Date, default: null },
+    purgedAt: { type: Date, default: null }, // Phase 30: data permanently erased (only a tombstone is left)
   },
   { timestamps: true, strict: 'throw' }
 );

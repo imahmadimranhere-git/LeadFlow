@@ -14,6 +14,7 @@ import { messageRouter, templateRouter } from './messages.routes.js';
 import websiteAuditRoutes from './websiteAudits.routes.js';
 import conversationRoutes from './conversations.routes.js';
 import analyticsRoutes from './analytics.routes.js';
+import exportRoutes from './exports.routes.js';
 import { followUpRouter, notificationRouter } from './followUps.routes.js';
 import { itemRouter, clientRouter, quoteRouter, invoiceRouter, projectRouter, taskRouter, timeRouter, accountingRouter } from './erp.routes.js';
 import unsubscribeRoutes from './unsubscribe.routes.js';
@@ -53,6 +54,7 @@ router.use('/tasks', taskRouter);
 router.use('/time', timeRouter);
 router.use('/accounting', accountingRouter);
 router.use('/analytics', analyticsRoutes);
+router.use('/exports', exportRoutes);
 router.use('/unsubscribe', unsubscribeRoutes); // public (signed token)
 router.use('/super-admin', superAdminRoutes);
 

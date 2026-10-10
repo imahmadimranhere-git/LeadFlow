@@ -12,6 +12,9 @@ import {
 } from './middleware/security.js';
 import rejectMongoOperators from './middleware/rejectMongoOperators.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
+import { makeOriginGuard } from './utils/originGuard.js';
+import requestMetrics from './monitoring/requestMetrics.js';
+import { logSecurityEvent } from './utils/securityLogger.js';
 import apiRoutes from './routes/index.js';
 import webhookRoutes from './routes/webhooks.routes.js';
 
@@ -21,10 +24,19 @@ const app = express();
 app.disable('x-powered-by');
 // "simple" parser: ?a[$ne]=1 is NOT turned into an object → no operator injection via query string
 app.set('query parser', 'simple');
-// Behind Render/Railway proxy → needed for correct client IP in rate limiter
-if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
+// Behind proxies → needed for the correct client IP (rate limits, logs).
+// Render alone = 1 hop; Vercel → Render = 2 hops (TRUST_PROXY_HOPS). Never "true" (that trusts anyone's X-Forwarded-For).
+if (env.NODE_ENV === 'production') app.set('trust proxy', env.TRUST_PROXY_HOPS);
 
 app.use(requestId);
+app.use(requestMetrics); // Phase 30: counts + timings per route pattern (no ids, no personal data)
+// Optional: refuse requests that didn't come through our Vercel proxy (ORIGIN_SECRET)
+app.use(makeOriginGuard(env.ORIGIN_SECRET, { onBlocked: (req) => logSecurityEvent('origin_guard_blocked', { path: req.originalUrl, ip: req.ip }) }));
+// API answers are personal → never stored by browsers, proxies or the Vercel CDN (files set their own headers)
+app.use('/api', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 app.use(
   pinoHttp({
     logger,

@@ -14,6 +14,7 @@ import * as v from '../validators/leads.validators.js';
 import rateLimit from 'express-rate-limit';
 import env from '../config/env.js';
 import { z } from '../validators/common.js';
+import { requestMeta } from '../utils/requestMeta.js';
 import { analyzeEvidence, latestAnalyses } from '../services/ai/evidenceFacts.js';
 import { scoreLead, latestScore } from '../services/ai/scoring/leadScoring.js';
 import { auditLead, listLeadAudits } from '../services/websiteAudit/websiteAuditService.js';
@@ -48,6 +49,12 @@ router.post('/check-duplicates', canWrite, validate({ body: v.checkDuplicatesBod
 router.post('/bulk', canWrite, validate({ body: v.bulkBody }), h(async (req, res) => sendSuccess(res, await leads.bulkUpdate(req.auth, req.validated.body))));
 
 // ---- single lead ----
+router.get('/:id/dossier.pdf', authorize(P.EXPORT_RUN), validate({ params: v.idParams }), h(async (req, res) => {
+  const { leadDossier } = await import('../services/exports/reportPdfs.js');
+  const { sendFile } = await import('./exports.routes.js');
+  const f = await leadDossier(req.auth, req.validated.params.id, requestMeta(req));
+  sendFile(res, { ...f, contentType: 'application/pdf' });
+}));
 router.get('/:id', canRead, validate({ params: v.idParams }), h(async (req, res) => sendSuccess(res, { lead: await leads.getLead(req.auth, req.validated.params.id) })));
 router.patch('/:id', canWrite, validate({ params: v.idParams, body: v.updateLeadBody }), h(async (req, res) =>
   sendSuccess(res, { lead: await leads.updateLead(req.auth, req.validated.params.id, req.validated.body) })));

@@ -50,9 +50,17 @@ export function AuthProvider({ children }) {
       ...state,
       /** UI-only check to hide menus/buttons. The server enforces the real permission. */
       can: (...perms) => perms.some((p) => state.permissions.includes(p)),
+      /** → { mfaRequired, mfaToken } when two-step login is on; otherwise logs in and returns {}. */
       async login(body) {
         const { data } = await api.post('/auth/login', body);
+        if (data.data.mfaRequired) return { mfaRequired: true, mfaToken: data.data.mfaToken };
         applySession(data.data);
+        return {};
+      },
+      async loginMfa(body) {
+        const { data } = await api.post('/auth/login/mfa', body);
+        applySession(data.data);
+        return { recoveryCodesLeft: data.data.recoveryCodesLeft };
       },
       async register(body) {
         const { data } = await api.post('/auth/register', body);

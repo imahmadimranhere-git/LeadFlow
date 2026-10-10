@@ -13,6 +13,8 @@ import * as quotes from '../services/erp/quoteService.js';
 import * as invoices from '../services/erp/invoiceService.js';
 import * as projects from '../services/erp/projectService.js';
 import * as accounting from '../services/erp/accountingService.js';
+import { quotePdfFor, invoicePdfFor } from '../services/exports/reportPdfs.js';
+import { sendFile } from './exports.routes.js';
 import * as v from '../validators/erp.validators.js';
 
 const h = asyncHandler;
@@ -49,6 +51,7 @@ export const quoteRouter = Router();
 quoteRouter.use(authenticate, requireModule('quotes'));
 quoteRouter.get('/', canRead, validate({ query: v.quotesQuery }), h(async (req, res) => paged(res, req.validated.query, await quotes.listQuotes(req.auth, req.validated.query))));
 quoteRouter.post('/', canWrite, validate({ body: v.createQuoteBody }), h(async (req, res) => sendSuccess(res, { quote: await quotes.createQuote(req.auth, req.validated.body) }, 201)));
+quoteRouter.get('/:id/pdf', canRead, validate({ params: v.idParams }), h(async (req, res) => sendFile(res, { ...(await quotePdfFor(req.auth, req.validated.params.id)), contentType: 'application/pdf' })));
 quoteRouter.get('/:id', canRead, validate({ params: v.idParams }), h(async (req, res) => sendSuccess(res, await quotes.getQuote(req.auth, req.validated.params.id))));
 quoteRouter.patch('/:id', canWrite, validate({ params: v.idParams, body: v.updateQuoteBody }), h(async (req, res) => sendSuccess(res, { quote: await quotes.updateQuote(req.auth, req.validated.params.id, req.validated.body) })));
 quoteRouter.post('/:id/status', canWrite, validate({ params: v.idParams, body: v.statusBody }), h(async (req, res) => sendSuccess(res, { quote: await quotes.changeStatus(req.auth, req.validated.params.id, req.validated.body.status, req.validated.body) })));
@@ -66,6 +69,7 @@ invoiceRouter.get('/payments', canRead, validate({ query: v.paymentsQuery }), h(
 invoiceRouter.post('/payments/:id/void', canManageMoney, validate({ params: v.idParams, body: v.reasonBody }), h(async (req, res) => sendSuccess(res, await invoices.voidPayment(req.auth, req.validated.params.id, req.validated.body))));
 invoiceRouter.post('/from-quote/:quoteId', canManageMoney, validate({ params: v.quoteParams }), h(async (req, res) => sendSuccess(res, { invoice: await invoices.invoiceFromQuote(req.auth, req.validated.params.quoteId) }, 201)));
 invoiceRouter.post('/', canManageMoney, validate({ body: v.createInvoiceBody }), h(async (req, res) => sendSuccess(res, { invoice: await invoices.createInvoice(req.auth, req.validated.body) }, 201)));
+invoiceRouter.get('/:id/pdf', canRead, validate({ params: v.idParams }), h(async (req, res) => sendFile(res, { ...(await invoicePdfFor(req.auth, req.validated.params.id)), contentType: 'application/pdf' })));
 invoiceRouter.get('/:id', canRead, validate({ params: v.idParams }), h(async (req, res) => sendSuccess(res, await invoices.getInvoice(req.auth, req.validated.params.id))));
 invoiceRouter.patch('/:id', canManageMoney, validate({ params: v.idParams, body: v.updateInvoiceBody }), h(async (req, res) => sendSuccess(res, { invoice: await invoices.updateInvoice(req.auth, req.validated.params.id, req.validated.body) })));
 invoiceRouter.delete('/:id', canManageMoney, validate({ params: v.idParams }), h(async (req, res) => sendSuccess(res, await invoices.deleteDraft(req.auth, req.validated.params.id))));

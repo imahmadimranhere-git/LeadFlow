@@ -81,6 +81,10 @@ const tenantSettingsSchema = new mongoose.Schema(
       temperature: { type: Number, min: 0, max: 1, default: null }, // null = provider default
       maxOutputTokens: { type: Number, min: 200, max: 4000, default: 1000 },
       maxRetries: { type: Number, min: 0, max: 2, default: 1 },
+      // Phase 26: monthly AI budget (estimated USD, company calendar month). null = no budget.
+      monthlyBudgetUsd: { type: Number, min: 0, max: 100000, default: null },
+      budgetAlertPercent: { type: Number, min: 50, max: 100, default: 80 }, // warn owners/admins at this %
+      budgetHardStop: { type: Boolean, default: false }, // true = new AI requests refused once the budget is used up
     },
     general: {
       timezone: { type: String, maxlength: 64, default: DEFAULT_TIMEZONE }, // "today" for follow-ups + digest time

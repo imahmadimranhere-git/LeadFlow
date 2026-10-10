@@ -89,6 +89,7 @@ export async function updateSection(actor, section, data) {
         const m = await findActiveModel(next.provider, next.model);
         if (!m) throw ApiError.badRequest('Validation failed', [{ field: 'model', message: 'Choose a model from the list for this provider' }]);
       }
+      if (!(next.monthlyBudgetUsd > 0)) next.monthlyBudgetUsd = null; // 0 = no budget
       settings.ai = next;
       break;
     }

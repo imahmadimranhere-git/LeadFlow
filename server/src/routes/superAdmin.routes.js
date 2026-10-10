@@ -15,6 +15,12 @@ import * as sv from '../validators/settings.validators.js';
 import { sendSuccess } from '../utils/response.js';
 import { requestMeta } from '../utils/requestMeta.js';
 import * as aiModels from '../services/ai/modelPricingService.js';
+import { platformAiUsage } from '../services/superAdmin/aiUsageAdminService.js';
+import { snapshot } from '../monitoring/monitorService.js';
+import { purgeTenant, listDeletedTenants } from '../services/superAdmin/tenantPurgeService.js';
+import Tenant from '../models/Tenant.js';
+import ApiError from '../utils/ApiError.js';
+import { runAsSystem } from '../utils/tenantContext.js';
 
 const router = Router();
 
@@ -74,6 +80,22 @@ router.post('/ai-models', validate({ body: v.createAiModelBody }), asyncHandler(
   sendSuccess(res, { model: await aiModels.adminCreateModel(req.admin, req.validated.body, requestMeta(req)) }, 201)));
 router.patch('/ai-models/:id', validate({ params: v.idParams, body: v.updateAiModelBody }), asyncHandler(async (req, res) =>
   sendSuccess(res, { model: await aiModels.adminUpdateModel(req.admin, req.validated.params.id, req.validated.body, requestMeta(req)) })));
+
+// ---- AI usage & cost, all companies (Phase 26) ----
+router.get('/ai-usage', validate({ query: v.aiUsageQuery }), asyncHandler(async (req, res) => sendSuccess(res, await platformAiUsage(req.validated.query))));
+
+// ---- System health (Phase 30) — this server's numbers: requests, errors, jobs, DB, memory, alerts ----
+router.get('/system', validate({}), asyncHandler(async (_req, res) => sendSuccess(res, await snapshot())));
+router.get('/deleted-tenants', validate({}), asyncHandler(async (_req, res) => sendSuccess(res, { items: await listDeletedTenants() })));
+
+// ---- Permanent erasure of a deleted company (Phase 30). Dry run first; real run needs slug + "ERASE". ----
+router.post('/tenants/:id/purge', validate({ params: v.idParams, body: v.purgeTenantBody }), asyncHandler(async (req, res) => {
+  const { confirmSlug, dryRun } = req.validated.body;
+  const t = await runAsSystem('admin:purge:check', () => Tenant.findOne({ _id: req.validated.params.id, deletedAt: { $ne: null } }).select('slug'));
+  if (!t) throw ApiError.badRequest('Only a company that has already been deleted can be erased permanently.');
+  if (t.slug !== confirmSlug) throw ApiError.badRequest('Confirmation does not match the company slug');
+  sendSuccess(res, await purgeTenant(t._id, { dryRun, actor: req.admin.adminId, meta: requestMeta(req) }));
+}));
 
 // ---- industry packs ----
 router.get('/industry-packs', validate({}), asyncHandler(async (_req, res) => sendSuccess(res, { items: await packs.listAllPacks() })));

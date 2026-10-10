@@ -1,6 +1,10 @@
 // Validates ALL environment variables at startup.
 // If anything is missing or weak, the server refuses to start (fail securely).
-import 'dotenv/config';
+import dotenv from 'dotenv';
+
+// Tests must NEVER read your real server/.env (real SMTP / AI keys / Atlas) — tests/helpers/setupEnv.js
+// sets safe fake values instead. Everything else (dev, production, scripts) loads .env as usual.
+if (process.env.NODE_ENV !== 'test') dotenv.config();
 import { z } from 'zod';
 
 const PLACEHOLDER = /change_me/i;
@@ -53,6 +57,27 @@ const envSchema = z.object({
   EXTENSION_ORIGINS: z.string().default(''),
   // AI requests per minute per company (protects your AI bill from a stuck script / double clicks)
   AI_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(20),
+
+  // Platform email (Phase 27): password reset + email verification links. Optional — without it the
+  // app still works, but those emails can't be sent (in development the link is printed in the server log).
+  PLATFORM_SMTP_HOST: z.string().optional().or(z.literal('').transform(() => undefined)),
+  PLATFORM_SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  PLATFORM_SMTP_USER: z.string().optional().or(z.literal('').transform(() => undefined)),
+  PLATFORM_SMTP_PASSWORD: z.string().optional().or(z.literal('').transform(() => undefined)),
+  PLATFORM_EMAIL_FROM: z.string().optional().or(z.literal('').transform(() => undefined)),
+
+  // Deployment (Phase 29). How many proxies sit in front of the API: Render alone = 1; Vercel → Render = 2.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+  // Optional: when set, the API only accepts requests that came through YOUR Vercel proxy (Vercel adds this
+  // secret header). Webhooks + health stay open. Long random value: npm run secrets:generate
+  ORIGIN_SECRET: z.string().min(32).optional().or(z.literal('').transform(() => undefined)),
+
+  // Monitoring (Phase 30)
+  ALERT_EMAIL: z.string().trim().toLowerCase().email().optional().or(z.literal('').transform(() => undefined)), // default: SUPER_ADMIN_EMAIL
+  MEMORY_LIMIT_MB: z.coerce.number().int().min(128).max(65536).default(512), // your instance's RAM (Render Starter = 512)
+  SLOW_QUERY_MS: z.coerce.number().int().min(50).max(60000).default(500),
+  // Permanently erase a company's data N days after it was deleted (0 = never automatically; see MAINTENANCE.md)
+  PURGE_DELETED_TENANTS_AFTER_DAYS: z.coerce.number().int().min(0).max(3650).default(0),
 
   // Background jobs (billing cycle...). Set to "false" to switch them off.
   ENABLE_JOBS: z.enum(['true', 'false']).default('true').transform((v) => v === 'true'),

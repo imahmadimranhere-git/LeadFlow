@@ -1,5 +1,6 @@
 // Quote editor. The preview is calculated in the browser while you type, but on Save the SERVER
 // recalculates everything and its numbers are what's stored and printed.
+import PdfDownloadButton from '../../../components/PdfDownloadButton.jsx';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -43,7 +44,8 @@ function StatusActions({ quote, onChanged }) {
   const b = (status, label, variant = 'ghost') => <Button key={status} variant={variant} loading={change.isPending && change.variables?.status === status} onClick={() => (['DECLINED', 'CANCELLED'].includes(status) ? setAsk(status) : change.mutate({ status }))}>{label}</Button>;
   return (
     <div className="flex flex-wrap gap-2">
-      <a href={`/print/quotes/${quote.id}`} target="_blank" rel="noopener noreferrer" className="rounded-lg px-3 py-2 text-sm ring-1 ring-white/15 hover:bg-white/5">Print / PDF</a>
+      <a href={`/print/quotes/${quote.id}`} target="_blank" rel="noopener noreferrer" className="rounded-lg px-3 py-2 text-sm ring-1 ring-white/15 hover:bg-white/5">Print</a>
+      <PdfDownloadButton path={`/quotes/${quote.id}/pdf`} fileName="quote.pdf">PDF file</PdfDownloadButton>
       {s === 'DRAFT' && b('SENT', 'Mark as sent', 'primary')}
       {s === 'SENT' && b('ACCEPTED', 'Accepted ✓', 'primary')}
       {s === 'ACCEPTED' && can('projects:manage') && <Button variant="ghost" loading={project.isPending} onClick={() => project.mutate()}>Start project</Button>}

@@ -1,5 +1,6 @@
 // One invoice: edit while DRAFT → Issue (gets its number, then locked) → record payments → Paid.
 // Mistakes: void a payment (reason) / void the invoice (reason). Nothing is ever deleted after issuing.
+import PdfDownloadButton from '../../../components/PdfDownloadButton.jsx';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -112,7 +113,8 @@ export default function InvoicePage() {
         </div>
         {inv && (
           <div className="flex flex-wrap gap-2">
-            <a href={`/print/invoices/${inv.id}`} target="_blank" rel="noopener noreferrer" className="rounded-lg px-3 py-2 text-sm ring-1 ring-white/15 hover:bg-white/5">Print / PDF</a>
+            <a href={`/print/invoices/${inv.id}`} target="_blank" rel="noopener noreferrer" className="rounded-lg px-3 py-2 text-sm ring-1 ring-white/15 hover:bg-white/5">Print</a>
+            <PdfDownloadButton path={`/invoices/${inv.id}/pdf`} fileName="invoice.pdf">PDF file</PdfDownloadButton>
             {manage && inv.status === 'DRAFT' && <Button loading={act.isPending} disabled={Boolean(form)} title={form ? 'Save your changes first' : ''} onClick={() => act.mutate({ path: `/invoices/${inv.id}/issue`, done: 'Invoice issued — it now has its number' })}>Issue invoice</Button>}
             {manage && inv.status === 'ISSUED' && <Button onClick={() => setModal('pay')}>Record payment</Button>}
             {manage && ['ISSUED', 'PAID'].includes(inv.status) && <Button variant="ghost" onClick={() => setModal('void')}>Void</Button>}

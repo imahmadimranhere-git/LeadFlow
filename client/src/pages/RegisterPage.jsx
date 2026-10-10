@@ -52,6 +52,7 @@ export default function RegisterPage() {
           hint="At least 10 characters, with letters and numbers."
           required
         />
+        <p className="text-xs text-white/50">By creating an account you agree to the <Link className="underline" to="/terms" target="_blank" rel="noopener noreferrer">Terms</Link> and the <Link className="underline" to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.</p>
         <Button type="submit" loading={loading} className="w-full">Create account</Button>
       </form>
     </AuthShell>

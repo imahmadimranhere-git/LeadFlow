@@ -14,6 +14,8 @@ const NAV = [
       { to: '/super-admin/invoices', label: 'Invoices', icon: 'receipt' },
       { to: '/super-admin/industry-packs', label: 'Industry packs', icon: 'template' },
       { to: '/super-admin/ai-models', label: 'AI models', icon: 'cpu' },
+      { to: '/super-admin/ai-usage', label: 'AI usage', icon: 'chart' },
+      { to: '/super-admin/system', label: 'System', icon: 'shield' },
       { to: '/super-admin/audit-logs', label: 'Audit logs', icon: 'shield' },
     ],
   },

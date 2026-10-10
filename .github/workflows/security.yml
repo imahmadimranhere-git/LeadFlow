@@ -1,0 +1,91 @@
+# PHASE 27 — runs on every push / pull request to main, and every Monday.
+# Jobs: our own static scan, server tests (incl. tenant-isolation + pen-test style tests),
+# dependency audit, secret scan of the whole Git history (gitleaks), and CodeQL code analysis.
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  static-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: LeadFlow security scan (secrets, dangerous code, unprotected routes)
+        run: node server/scripts/securityScan.mjs --strict
+
+  server-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci || npm install
+        working-directory: server
+      - run: npm test
+        working-directory: server
+
+  client-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci || npm install
+        working-directory: client
+      - run: npm run build
+        working-directory: client
+        env:
+          VITE_API_URL: /api/v1
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci || npm install
+        working-directory: server
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: server
+      - run: npm ci || npm install
+        working-directory: client
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: client
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # whole history: a secret deleted later is STILL in Git and must be rotated
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@v3

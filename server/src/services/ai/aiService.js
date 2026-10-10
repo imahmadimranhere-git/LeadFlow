@@ -4,11 +4,13 @@
 //
 // 1. Which key?   your own key (vault) first → platform key only if your plan has "platform-ai"
 // 2. Which model? your AI settings → else the platform default of that provider (super admin's price list)
+// 2b. Budget      monthly AI budget (Phase 26): refused (402) if the owner chose a hard stop and it is used up
 // 3. Quota        1 AI request + a token RESERVATION (estimated input + max output) taken BEFORE the call,
 //                 corrected to the real numbers afterwards → parallel requests can't overshoot the plan
 // 4. Call         timeout, limited retries (rate limit / provider down / unreadable answer) with backoff
 // 5. Validate     the answer must match a strict zod schema — AI output is untrusted input
 // 6. Log          AiUsageLog: tokens, cost, status — never the prompt, the lead text or the key
+// 7. Alert        budget WARN / EXCEEDED notification (once per level per month)
 import env from '../../config/env.js';
 import TenantSettings from '../../models/TenantSettings.js';
 import TenantIntegration from '../../models/TenantIntegration.js';
@@ -22,6 +24,7 @@ import { consumeQuota, releaseQuota, addUsage } from '../billing/quotaService.js
 import { complete, AiError } from './providers.js';
 import { estimateTokens, costUsd } from './promptSafety.js';
 import { findActiveModel, defaultModel } from './modelPricingService.js';
+import { checkBudgetBefore, afterAiUsage } from './aiBudget.js';
 
 const RETRY_BASE_MS = env.NODE_ENV === 'test' ? 0 : 800;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -86,6 +89,9 @@ export async function runAi(auth, { requestType, system, user, schemaName, jsonS
   }
   const pricing = await resolveModel(cred.provider, settings.model);
   const maxOutputTokens = Math.min(AI_LIMITS.maxOutputTokens, Math.max(AI_LIMITS.minOutputTokens, settings.maxOutputTokens));
+
+  // ---- monthly budget (Phase 26) — checked before any quota or money is spent
+  const budgetCtx = await checkBudgetBefore();
 
   // ---- quota: reserve first (atomic), settle afterwards
   const reserved = estimateTokens(system) + estimateTokens(user) + maxOutputTokens;
@@ -155,6 +161,11 @@ export async function runAi(auth, { requestType, system, user, schemaName, jsonS
     targetType: target?.type || null,
     targetId: target?.id || null,
   });
+  try {
+    await afterAiUsage(budgetCtx, log.estimatedCostUsd);
+  } catch (err) {
+    logger.warn({ err: err.message }, 'AI budget alert failed'); // an alert problem never fails the AI answer
+  }
 
   if (lastError) {
     if (lastError.code === 'KEY_INVALID' && cred.source === 'TENANT') {

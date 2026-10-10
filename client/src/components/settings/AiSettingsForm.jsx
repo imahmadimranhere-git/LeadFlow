@@ -23,6 +23,9 @@ export default function AiSettingsForm({ settings, readOnly }) {
     temperature: ai.temperature ?? '',
     maxOutputTokens: ai.maxOutputTokens || 1000,
     maxRetries: ai.maxRetries ?? 1,
+    monthlyBudgetUsd: ai.monthlyBudgetUsd ?? '',
+    budgetAlertPercent: ai.budgetAlertPercent ?? 80,
+    budgetHardStop: Boolean(ai.budgetHardStop),
   });
   const models = useQuery({ queryKey: ['ai', 'models'], queryFn: async () => (await api.get('/ai/models')).data.data.items, staleTime: 5 * 60_000 });
   const setSettings = useSetSettings();
@@ -35,6 +38,9 @@ export default function AiSettingsForm({ settings, readOnly }) {
         temperature: f.temperature === '' ? null : Number(f.temperature),
         maxOutputTokens: Number(f.maxOutputTokens),
         maxRetries: Number(f.maxRetries),
+        monthlyBudgetUsd: f.monthlyBudgetUsd === '' ? null : Number(f.monthlyBudgetUsd),
+        budgetAlertPercent: Number(f.budgetAlertPercent),
+        budgetHardStop: f.budgetHardStop,
       })).data.data.settings,
     onSuccess: (s) => {
       setSettings(s);
@@ -68,6 +74,17 @@ export default function AiSettingsForm({ settings, readOnly }) {
         <Field label="Temperature (empty = default)" name="temperature" type="number" min={0} max={1} step={0.1} value={f.temperature} onChange={(e) => setF({ ...f, temperature: e.target.value })} error={errs.temperature} hint="Lower = more predictable. Some models ignore it." />
         <Field label="Max answer tokens" name="maxOutputTokens" type="number" min={200} max={4000} step={100} value={f.maxOutputTokens} onChange={(e) => setF({ ...f, maxOutputTokens: e.target.value })} error={errs.maxOutputTokens} />
         <SelectField label="Retries on errors" name="maxRetries" value={f.maxRetries} onChange={(e) => setF({ ...f, maxRetries: e.target.value })} options={[0, 1, 2].map((n) => ({ value: n, label: String(n) }))} />
+      </div>
+      <div className="rounded-lg bg-white/[0.03] p-4 ring-1 ring-white/10">
+        <p className="mb-3 text-sm font-medium">Monthly AI budget <span className="text-xs font-normal text-white/40">(estimated USD, your company's calendar month)</span></p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Budget in USD (empty = no budget)" name="monthlyBudgetUsd" type="number" min={0} step={0.5} value={f.monthlyBudgetUsd} onChange={(e) => setF({ ...f, monthlyBudgetUsd: e.target.value })} error={errs.monthlyBudgetUsd} />
+          <SelectField label="Alert owners & admins at" name="budgetAlertPercent" value={f.budgetAlertPercent} onChange={(e) => setF({ ...f, budgetAlertPercent: e.target.value })} options={[50, 70, 80, 90, 100].map((n) => ({ value: n, label: `${n}% of the budget` }))} />
+        </div>
+        <label className="mt-3 flex items-start gap-2 text-sm text-white/70">
+          <input type="checkbox" className="mt-1" checked={f.budgetHardStop} onChange={(e) => setF({ ...f, budgetHardStop: e.target.checked })} />
+          <span>Hard stop: refuse new AI requests once the budget is used up (otherwise you only get an alert). Requests already running can pass the line a little.</span>
+        </label>
       </div>
       <ul className="list-disc space-y-1 pl-5 text-xs text-white/45">
         <li>Your own key is added in <Link className="underline" to="/app/settings/integrations">Integrations</Link>. Its cost is billed by the AI provider to you.</li>

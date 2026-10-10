@@ -1,6 +1,8 @@
 // Business logic for register / login / refresh / logout / password change.
 // Controllers stay thin; all rules live here.
+import jwt from 'jsonwebtoken';
 import mongoose from '../../config/mongoose.js';
+import env from '../../config/env.js';
 import User from '../../models/User.js';
 import Tenant from '../../models/Tenant.js';
 import Plan from '../../models/Plan.js';
@@ -19,6 +21,7 @@ import {
   revokeAllForUser,
   ACCESS_TOKEN_TTL_SECONDS,
 } from './tokenService.js';
+import { useSecondFactor, issueEmailVerification } from './accountSecurityService.js';
 
 const MAX_FAILED_LOGINS = 5;
 const LOCK_MINUTES = 15;
@@ -116,6 +119,7 @@ export async function register({ name, email, password, companyName }, meta) {
   }
 
   logSecurityEvent('tenant_registered', { tenantId: String(tenant._id), userId: String(user._id), ip: meta.ip });
+  void issueEmailVerification(user, meta); // not awaited; never fails the sign-up
   return buildSession(user, tenant, meta);
 }
 
@@ -136,20 +140,7 @@ export async function login({ email, password }, meta) {
 
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
-    const updated = await runAsSystem('auth:login:failed', () =>
-      User.findOneAndUpdate({ _id: user._id }, { $inc: { failedLoginCount: 1 } }, { new: true })
-    );
-    if (updated && updated.failedLoginCount >= MAX_FAILED_LOGINS) {
-      await runAsSystem('auth:login:lock', () =>
-        User.updateOne(
-          { _id: user._id },
-          { $set: { lockUntil: new Date(Date.now() + LOCK_MINUTES * 60 * 1000), failedLoginCount: 0 } }
-        )
-      );
-      logSecurityEvent('account_locked', { userId: String(user._id), ip: meta.ip });
-    } else {
-      logSecurityEvent('login_failed', { reason: 'wrong_password', userId: String(user._id), ip: meta.ip });
-    }
+    await registerFailedLogin(user, meta, 'wrong_password');
     throw ApiError.unauthorized(INVALID_LOGIN);
   }
 
@@ -157,6 +148,13 @@ export async function login({ email, password }, meta) {
 
   const tenant = await Tenant.findById(user.tenantId);
   if (tenantAccess(tenant, user.role) === 'NONE') throw accessDeniedError(tenant);
+
+  // Two-step login on → no session yet, only a 5-minute ticket for step 2. The failed-login counter is
+  // NOT reset here: otherwise someone with the password could guess codes forever.
+  if (user.mfaEnabled) {
+    logSecurityEvent('login_mfa_challenge', { userId: String(user._id), ip: meta.ip });
+    return { mfaRequired: true, mfaToken: signMfaTicket(user), expiresIn: MFA_TICKET_SECONDS };
+  }
 
   await runAsSystem('auth:login:success', () =>
     User.updateOne(
@@ -166,6 +164,55 @@ export async function login({ email, password }, meta) {
   );
 
   return buildSession(user, tenant, meta);
+}
+
+/** Wrong password / wrong code: count it; 5 in a row → locked for 15 minutes. */
+async function registerFailedLogin(user, meta, reason) {
+  const updated = await runAsSystem('auth:login:failed', () =>
+    User.findOneAndUpdate({ _id: user._id }, { $inc: { failedLoginCount: 1 } }, { new: true })
+  );
+  if (updated && updated.failedLoginCount >= MAX_FAILED_LOGINS) {
+    await runAsSystem('auth:login:lock', () =>
+      User.updateOne({ _id: user._id }, { $set: { lockUntil: new Date(Date.now() + LOCK_MINUTES * 60 * 1000), failedLoginCount: 0 } })
+    );
+    logSecurityEvent('account_locked', { userId: String(user._id), ip: meta.ip });
+  } else {
+    logSecurityEvent('login_failed', { reason, userId: String(user._id), ip: meta.ip });
+  }
+}
+
+// ---- two-step login ticket: a SEPARATE audience, so it can never be used as an access token
+const MFA_TICKET_SECONDS = 300;
+const MFA_AUDIENCE = 'leadflow-mfa';
+const signMfaTicket = (user) =>
+  jwt.sign({ tid: String(user.tenantId), tv: user.tokenVersion ?? 0 }, env.JWT_SECRET, { algorithm: 'HS256', subject: String(user._id), issuer: 'leadflow-api', audience: MFA_AUDIENCE, expiresIn: MFA_TICKET_SECONDS });
+
+/** Step 2 of login: the 6-digit code (or a one-time recovery code). */
+export async function loginMfa({ mfaToken, code, recoveryCode }, meta) {
+  let payload;
+  try {
+    payload = jwt.verify(mfaToken, env.JWT_SECRET, { algorithms: ['HS256'], issuer: 'leadflow-api', audience: MFA_AUDIENCE });
+  } catch {
+    throw ApiError.unauthorized('Your login step expired — please enter your password again.');
+  }
+  if (!mongoose.isValidObjectId(payload.sub) || !mongoose.isValidObjectId(payload.tid)) throw ApiError.unauthorized(INVALID_LOGIN);
+  return runAsSystem('auth:login:mfa', async () => {
+    const user = await User.findOne({ _id: payload.sub, tenantId: payload.tid }).select('+mfaSecretEnc +mfaRecoveryHashes');
+    if (!user || user.status !== 'ACTIVE' || !user.mfaEnabled || user.tokenVersion !== payload.tv) throw ApiError.unauthorized('Your login step expired — please enter your password again.');
+    if (user.lockUntil && user.lockUntil.getTime() > Date.now()) throw ApiError.unauthorized('Too many wrong attempts. Try again in 15 minutes.');
+    const method = await useSecondFactor(user, { code, recoveryCode });
+    if (!method) {
+      await registerFailedLogin(user, meta, 'wrong_mfa_code');
+      throw ApiError.unauthorized('Wrong code. Use the newest code from your authenticator app, or a recovery code.');
+    }
+    const tenant = await Tenant.findById(user.tenantId);
+    if (tenantAccess(tenant, user.role) === 'NONE') throw accessDeniedError(tenant);
+    await User.updateOne({ _id: user._id }, { $set: { failedLoginCount: 0, lockUntil: null, lastLoginAt: new Date(), lastLoginIp: meta.ip ?? null } });
+    logSecurityEvent(method === 'RECOVERY' ? 'login_with_recovery_code' : 'login_mfa_success', { userId: String(user._id), ip: meta.ip });
+    const session = await buildSession(user, tenant, meta);
+    if (method === 'RECOVERY') session.body.recoveryCodesLeft = Math.max(0, (user.mfaRecoveryHashes || []).length - 1);
+    return session;
+  });
 }
 
 export async function refresh(rawToken, meta) {

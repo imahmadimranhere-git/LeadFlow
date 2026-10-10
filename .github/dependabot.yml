@@ -1,0 +1,17 @@
+# PHASE 27 — weekly pull requests for outdated / vulnerable packages. Review before merging (don't merge blindly).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /server
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /client
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: monthly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }

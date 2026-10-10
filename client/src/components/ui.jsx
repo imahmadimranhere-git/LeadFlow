@@ -46,6 +46,7 @@ export function AuthShell({ title, subtitle, children, footer }) {
           <div className="mt-6">{children}</div>
         </div>
         {footer && <div className="mt-6 text-center text-sm text-white/60">{footer}</div>}
+        <p className="mt-4 text-center text-xs text-white/35"><a className="hover:underline" href="/privacy">Privacy</a> · <a className="hover:underline" href="/terms">Terms</a></p>
       </div>
     </main>
   );

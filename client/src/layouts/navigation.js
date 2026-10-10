@@ -42,7 +42,7 @@ export const NAV_GROUPS = [
     label: 'Insights',
     items: [
       { to: '/app/analytics', label: 'Analytics', icon: 'chart', permissions: ['leads:read:all'] },
-      { to: '/app/exports', label: 'Exports', icon: 'download', phase: 25, permissions: ['export:run'],
+      { to: '/app/exports', label: 'Exports', icon: 'download', permissions: ['export:run'],
         description: 'Secure CSV and PDF exports (lead dossier, hashtag reports) with audit logging.' },
       { to: '/app/ai-usage', label: 'AI usage', icon: 'cpu', permissions: ['billing:manage', 'integrations:manage'] },
     ],

@@ -119,3 +119,17 @@ export const updateAiModelBody = z
   .partial()
   .strict()
   .refine((d) => Object.keys(d).length > 0, 'Nothing to update');
+
+// Phase 26: platform AI usage report (UTC days, max 366, optional one company)
+const usageDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)), 'Invalid date');
+export const aiUsageQuery = z
+  .object({ from: usageDay, to: usageDay, tenantId: objectId.optional() })
+  .strict()
+  .refine((d) => d.from <= d.to, { message: '"from" must be before "to"', path: ['from'] })
+  .refine((d) => (Date.parse(d.to) - Date.parse(d.from)) / 86400000 <= 366, { message: 'At most 366 days', path: ['to'] });
+
+// Phase 30: permanent erasure of an already-deleted company (dry run unless confirm === 'ERASE')
+export const purgeTenantBody = z
+  .object({ confirmSlug: z.string().trim().max(60), confirm: z.literal('ERASE').optional(), dryRun: z.boolean().default(true) })
+  .strict()
+  .refine((d) => d.dryRun || d.confirm === 'ERASE', { message: 'Type ERASE to confirm', path: ['confirm'] });

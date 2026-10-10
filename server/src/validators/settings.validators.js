@@ -111,6 +111,9 @@ export const aiBody = z
     temperature: z.number().min(0).max(1).nullable().optional(),
     maxOutputTokens: z.number().int().min(200).max(4000).optional(),
     maxRetries: z.number().int().min(0).max(2).optional(),
+    monthlyBudgetUsd: z.number().min(0).max(100000).nullable().optional(), // null / 0 = no budget
+    budgetAlertPercent: z.number().int().min(50).max(100).optional(),
+    budgetHardStop: z.boolean().optional(),
   })
   .strict()
   .refine((d) => Object.keys(d).length > 0, 'Nothing to update');

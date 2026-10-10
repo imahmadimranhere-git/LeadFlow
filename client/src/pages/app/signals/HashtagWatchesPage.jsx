@@ -6,6 +6,7 @@ import api from '../../../lib/api.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { useToast } from '../../../components/Toast.jsx';
 import useDocumentTitle from '../../../hooks/useDocumentTitle.js';
+import HashtagReportModal from '../../../components/signals/HashtagReportModal.jsx';
 import { PageHeader, Card, Button, Badge, Field, SelectField, Modal, Alert, LoadingState, ErrorState, EmptyState, ProgressBar, DropdownMenu, Icon } from '../../../components/ui.jsx';
 import { TagInput } from '../../../components/forms.jsx';
 import { normalizeHashtag, normalizePhrase } from '../../../utils/settingsOptions.js';
@@ -87,6 +88,8 @@ export default function HashtagWatchesPage() {
   const [editing, setEditing] = useState(null); // null | 'new' | watch
   const [deleting, setDeleting] = useState(null);
   const canManage = can('watches:manage');
+  const canExport = can('export:run');
+  const [reporting, setReporting] = useState(null);
 
   const watches = useQuery({ queryKey: ['hashtag-watches', 'list'], queryFn: async () => (await api.get('/hashtag-watches')).data.data.items, refetchInterval: 30_000 });
   const usage = useQuery({ queryKey: ['hashtag-watches', 'usage'], queryFn: async () => (await api.get('/hashtag-watches/usage')).data.data });
@@ -176,7 +179,10 @@ export default function HashtagWatchesPage() {
                   Last run {formatDateTime(w.lastRunAt)} · next {w.isActive ? formatDateTime(w.nextRunAt) : '—'}
                 </p>
                 {w.lastError && <p className="mt-1 text-xs text-amber-300">{w.lastError}</p>}
-                <Link to="/app/signals" className="mt-3 inline-block text-xs text-brand-500 underline">Open Signals inbox</Link>
+                <div className="mt-3 flex items-center gap-4">
+                  <Link to="/app/signals" className="text-xs text-brand-500 underline">Open Signals inbox</Link>
+                  {canExport && <button type="button" className="text-xs text-brand-500 underline" onClick={() => setReporting(w)}>Report (PDF / CSV)</button>}
+                </div>
               </div>
             ))}
           </div>
@@ -184,6 +190,7 @@ export default function HashtagWatchesPage() {
         <HonestNotes />
       </div>
 
+      {reporting && <HashtagReportModal watch={reporting} onClose={() => setReporting(null)} />}
       {editing && <WatchModal key={editing === 'new' ? 'new' : editing.id} watch={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
       <Modal
         open={Boolean(deleting)}

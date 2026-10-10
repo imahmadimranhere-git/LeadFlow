@@ -18,7 +18,7 @@ const html = (res, status, page) => {
 
 router.get('/:token', (req, res) => {
   if (!verifyUnsubscribe(req.params.token)) return html(res, 400, unsubscribePage({ error: 'This unsubscribe link is not valid.' }));
-  return html(res, 200, unsubscribePage({ actionUrl: req.originalUrl }));
+  return html(res, 200, unsubscribePage({ actionUrl: req.originalUrl.split('?')[0] }));
 });
 
 router.post('/:token', asyncHandler(async (req, res) => {

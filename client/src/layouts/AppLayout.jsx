@@ -84,11 +84,16 @@ export default function AppLayout() {
       brandLogoUrl={logoUrl}
       topBar={topBar}
       banner={
-        billingOnly && (
+        billingOnly ? (
           <div className="sticky top-0 z-40 flex h-8 items-center justify-center bg-red-500/20 px-4 text-xs font-medium text-red-200">
             Subscription suspended — renew below to unlock your workspace
           </div>
-        )
+        ) : user.emailVerified === false && location.pathname !== '/app/settings/account' ? (
+          <div className="sticky top-0 z-40 flex min-h-8 flex-wrap items-center justify-center gap-2 bg-amber-500/15 px-4 py-1 text-xs text-amber-100">
+            Please confirm your email address — we sent you a link.
+            <button type="button" className="underline" onClick={() => navigate('/app/settings/account')}>Resend / details</button>
+          </div>
+        ) : null
       }
     >
       <Suspense fallback={<LoadingState rows={6} />}>

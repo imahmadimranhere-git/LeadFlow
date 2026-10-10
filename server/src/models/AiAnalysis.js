@@ -10,7 +10,7 @@ const aiAnalysisSchema = new mongoose.Schema(
     leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', required: true },
     type: { type: String, enum: ANALYSIS_TYPES, required: true },
     status: { type: String, enum: ['RUNNING', 'COMPLETED', 'FAILED'], default: 'RUNNING' },
-    inputHash: { type: String, maxlength: 64, required: true }, // same evidence + model → reuse result
+    inputHash: { type: String, maxlength: 64, required: true, private: true }, // same evidence + model → reuse result
     result: { type: mongoose.Schema.Types.Mixed, default: null }, // already validated against a strict schema
     droppedClaims: { type: Number, default: 0 }, // AI "facts" removed because their quote is not in the evidence
     provider: { type: String, maxlength: 20, default: null },

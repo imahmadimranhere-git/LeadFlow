@@ -8,8 +8,10 @@ export const NOTIFICATION_LABEL = {
   INVOICE_OVERDUE: 'An invoice of my client is overdue',
   INVOICE_PAID: 'An invoice of my client was paid',
   TASK_ASSIGNED: 'A task was assigned to me',
+  LARGE_EXPORT: 'Someone exported a lot of data',
+  AI_BUDGET: 'AI spend reached the monthly budget',
 };
-export const NOTIFICATION_ICON = { FOLLOW_UP_DUE: 'clock', NEW_REPLY: 'chat', MESSAGE_APPROVED: 'checkCircle', MESSAGE_REJECTED: 'x', LEAD_ASSIGNED: 'target', QUOTE_ACCEPTED: 'file', INVOICE_OVERDUE: 'alert', INVOICE_PAID: 'receipt', TASK_ASSIGNED: 'checkCircle' };
+export const NOTIFICATION_ICON = { FOLLOW_UP_DUE: 'clock', NEW_REPLY: 'chat', MESSAGE_APPROVED: 'checkCircle', MESSAGE_REJECTED: 'x', LEAD_ASSIGNED: 'target', QUOTE_ACCEPTED: 'file', INVOICE_OVERDUE: 'alert', INVOICE_PAID: 'receipt', TASK_ASSIGNED: 'checkCircle', LARGE_EXPORT: 'download', AI_BUDGET: 'cpu' };
 
 /** Only in-app paths are followed — a notification can never send you to another website. */
 export const safeAppLink = (link) => (typeof link === 'string' && /^\/app\/[A-Za-z0-9/_?=&.-]*$/.test(link) ? link : null);

@@ -12,20 +12,27 @@ import { runAsSystem } from '../utils/tenantContext.js';
 import { runBillingCycle } from '../services/billing/subscriptionService.js';
 import { startDiscoveryRunner, stopDiscoveryRunner } from './discoveryRunner.js';
 import { checkMetaTokenExpiry } from '../services/integrations/meta/metaOAuthService.js';
+import { jobs } from '../monitoring/monitorState.js';
+import { runAlertCheck } from '../monitoring/monitorService.js';
+import { purgeDeletedTenants } from '../services/superAdmin/tenantPurgeService.js';
 
 const HOUR = 60 * 60 * 1000;
 const timers = [];
 
-function every(name, intervalMs, task, firstDelayMs = 30_000) {
+function every(name, intervalMs, task, firstDelayMs = 30_000, { quiet = false } = {}) {
   let running = false; // never run the same job twice at the same time
+  jobs.register(name, intervalMs, firstDelayMs); // Phase 30: heartbeat → System page + "job not running" alert
   const run = async () => {
     if (running) return;
     running = true;
     const started = Date.now();
+    jobs.start(name, started);
     try {
       const result = await runAsSystem(`job:${name}`, () => task());
-      logger.info({ job: name, ms: Date.now() - started, result }, `job ${name} done`);
+      jobs.ok(name);
+      if (!quiet) logger.info({ job: name, ms: Date.now() - started, result }, `job ${name} done`);
     } catch (err) {
+      jobs.fail(name, err);
       logger.error({ job: name, err: err.message }, `job ${name} failed`);
     } finally {
       running = false;
@@ -43,6 +50,8 @@ export function startScheduler() {
   every('billing-cycle', HOUR, () => runBillingCycle(new Date()));
   every('meta-token-expiry', 24 * HOUR, () => checkMetaTokenExpiry(new Date()), 5 * 60_000);
   startDiscoveryRunner(); // also runs due hashtag watches
+  every('monitor', 60_000, () => runAlertCheck(), 60_000, { quiet: true });
+  if (env.PURGE_DELETED_TENANTS_AFTER_DAYS > 0) every('purge-deleted-tenants', 24 * HOUR, () => purgeDeletedTenants(env.PURGE_DELETED_TENANTS_AFTER_DAYS), 10 * 60_000);
   logger.info('⏱  Background jobs started');
 }
 

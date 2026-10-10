@@ -1,6 +1,10 @@
 // MUST be imported first in every test file — sets safe fake env values
 // before src/config/env.js validates them. Tests never use your real .env secrets or Atlas DB.
 process.env.NODE_ENV = 'test';
+// Values that might be set in your terminal session must not reach tests either (real keys / mail servers)
+for (const k of Object.keys(process.env)) {
+  if (/^(PLATFORM_|SMTP_|TEST_SMTP|OPENAI_|ANTHROPIC_|STRIPE_|PAYMENT_|WHATSAPP_|GOOGLE_|ENCRYPTION_KEY_PREVIOUS|EXTENSION_ORIGINS|REDIS_URL)/.test(k)) delete process.env[k];
+}
 process.env.PORT = '5099';
 process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/leadflow_unused_in_tests';
 process.env.CLIENT_URL = 'http://localhost:5173';

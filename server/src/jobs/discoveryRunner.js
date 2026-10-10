@@ -8,6 +8,7 @@
 // a few hundred runs per day. Redis queues become worth it with many workers / high volume (Phase 11+).
 import crypto from 'node:crypto';
 import logger from '../config/logger.js';
+import { jobs } from '../monitoring/monitorState.js';
 import { claimNextRun, processRun, recoverStaleRuns } from '../services/leads/discovery/discoveryService.js';
 import { claimDueWatch, processWatch } from '../services/signals/watchService.js';
 import { claimNextBatch, processBatch, recoverStaleBatches } from '../services/ai/scoring/leadScoring.js';
@@ -15,6 +16,7 @@ import { recoverStuckSending } from '../services/outreach/outreachService.js';
 import { notifyDueFollowUps, sendDailyDigests } from '../services/followUps/followUpService.js';
 import { expireQuotes } from '../services/erp/quoteService.js';
 import { notifyOverdueInvoices, recoverStuckIssuing } from '../services/erp/invoiceService.js';
+import { processNextExport, housekeepExports } from '../services/exports/exportService.js';
 
 const WORKER_ID = `worker-${crypto.randomUUID().slice(0, 8)}`;
 const MAX_PARALLEL = 2;
@@ -25,6 +27,7 @@ let timer = null;
 let lastRecovery = 0;
 let lastFollowUps = 0;
 let followUpsActive = false;
+let exportActive = false; // one export at a time per server (they can be big)
 
 async function tick() {
   try {
@@ -39,6 +42,7 @@ async function tick() {
       const q = await expireQuotes();
       if (q) logger.info({ q }, 'quotes expired (validity date passed)');
       await recoverStuckIssuing();
+      await housekeepExports();
       await notifyOverdueInvoices();
     }
     if (!followUpsActive && Date.now() - lastFollowUps > 60_000) {
@@ -50,6 +54,15 @@ async function tick() {
         .catch((err) => logger.error({ err: err.message }, 'follow-up reminders failed'))
         .finally(() => {
           followUpsActive = false;
+        });
+    }
+    if (!exportActive) {
+      exportActive = true;
+      processNextExport()
+        .then((r) => r && logger.info(r, 'export finished'))
+        .catch((err) => logger.error({ err: err.message }, 'export crashed'))
+        .finally(() => {
+          exportActive = false;
         });
     }
     while (active < MAX_PARALLEL) {
@@ -83,13 +96,16 @@ async function tick() {
           });
       }
     }
+    jobs.ok('worker'); // Phase 30 heartbeat (discovery, watches, exports, follow-ups, scoring…)
   } catch (err) {
+    jobs.fail('worker', err);
     logger.error({ err: err.message }, 'discovery runner tick failed');
   }
 }
 
 export function startDiscoveryRunner(intervalMs = 5000) {
   if (timer) return;
+  jobs.register('worker', intervalMs, intervalMs);
   timer = setInterval(tick, intervalMs).unref();
   logger.info({ worker: WORKER_ID }, 'discovery runner started');
 }

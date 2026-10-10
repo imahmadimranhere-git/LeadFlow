@@ -5,7 +5,7 @@ import tenantScopePlugin from './plugins/tenantScope.js';
 
 const extensionPairingSchema = new mongoose.Schema(
   {
-    codeHash: { type: String, required: true },
+    codeHash: { type: String, required: true, private: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     expiresAt: { type: Date, required: true },
     usedAt: { type: Date, default: null },

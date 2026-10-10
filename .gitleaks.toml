@@ -1,0 +1,13 @@
+# gitleaks config: default rules + allow our deliberately FAKE test keys/passwords (never real ones).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "fake values used only in automated tests and docs"
+paths = [
+  '''server/tests/''',
+  '''\.env\.example$''',
+]
+regexes = [
+  '''sk-platform-test-key-not-real-0+''',
+]

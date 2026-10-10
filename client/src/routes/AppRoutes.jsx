@@ -33,6 +33,7 @@ const ClientDetailPage = lazy(() => import('../pages/app/erp/ClientDetailPage.js
 const QuotesPage = lazy(() => import('../pages/app/erp/QuotesPage.jsx'));
 const QuoteEditorPage = lazy(() => import('../pages/app/erp/QuoteEditorPage.jsx'));
 const AnalyticsPage = lazy(() => import('../pages/app/AnalyticsPage.jsx'));
+const ExportsPage = lazy(() => import('../pages/app/ExportsPage.jsx'));
 const AccountingPage = lazy(() => import('../pages/app/erp/AccountingPage.jsx'));
 const ProjectsPage = lazy(() => import('../pages/app/erp/ProjectsPage.jsx'));
 const ProjectPage = lazy(() => import('../pages/app/erp/ProjectPage.jsx'));
@@ -50,10 +51,16 @@ const ExtensionPage = lazy(() => import('../pages/app/ExtensionPage.jsx'));
 const DoNotContactPage = lazy(() => import('../pages/app/DoNotContactPage.jsx'));
 const OnboardingPage = lazy(() => import('../pages/app/OnboardingPage.jsx'));
 const IndustryPacksPage = lazy(() => import('../pages/superAdmin/IndustryPacksPage.jsx'));
-const InvoicesPage = lazy(() => import('../pages/superAdmin/InvoicesPage.jsx'));
+const AdminInvoicesPage = lazy(() => import('../pages/superAdmin/InvoicesPage.jsx'));
 const AiModelsPage = lazy(() => import('../pages/superAdmin/AiModelsPage.jsx'));
+const AiUsageAdminPage = lazy(() => import('../pages/superAdmin/AiUsageAdminPage.jsx'));
+const SystemPage = lazy(() => import('../pages/superAdmin/SystemPage.jsx'));
 const PlatformSettingsPage = lazy(() => import('../pages/superAdmin/PlatformSettingsPage.jsx'));
 const StatusPage = lazy(() => import('../pages/StatusPage.jsx'));
+const ForgotPasswordPage = lazy(() => import('../pages/ForgotPasswordPage.jsx'));
+const ResetPasswordPage = lazy(() => import('../pages/ResetPasswordPage.jsx'));
+const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage.jsx'));
+const LegalPage = lazy(() => import('../pages/LegalPage.jsx'));
 const AdminLoginPage = lazy(() => import('../pages/superAdmin/AdminLoginPage.jsx'));
 const AdminDashboardPage = lazy(() => import('../pages/superAdmin/AdminDashboardPage.jsx'));
 const TenantsPage = lazy(() => import('../pages/superAdmin/TenantsPage.jsx'));
@@ -72,14 +79,11 @@ function SuperAdminArea() {
           <Route path="tenants" element={<TenantsPage />} />
           <Route path="tenants/:id" element={<TenantDetailPage />} />
           <Route path="plans" element={<PlansPage />} />
-          <Route path="analytics" element={<RequirePermission permissions={['leads:read:all']}><AnalyticsPage /></RequirePermission>} />
-        <Route path="accounting" element={<RequirePermission permissions={['accounting:manage']}><AccountingPage /></RequirePermission>} />
-        <Route path="projects" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><ProjectsPage /></RequirePermission>} />
-        <Route path="projects/:id" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><ProjectPage /></RequirePermission>} />
-        <Route path="time" element={<RequirePermission permissions={['leads:write']}><TimePage /></RequirePermission>} />
-        <Route path="invoices" element={<InvoicesPage />} />
+          <Route path="invoices" element={<AdminInvoicesPage />} />
           <Route path="industry-packs" element={<IndustryPacksPage />} />
           <Route path="ai-models" element={<AiModelsPage />} />
+          <Route path="ai-usage" element={<AiUsageAdminPage />} />
+          <Route path="system" element={<SystemPage />} />
           <Route path="settings" element={<PlatformSettingsPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />
           <Route path="account" element={<AdminAccountPage />} />
@@ -98,6 +102,11 @@ export default function AppRoutes() {
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
       <Route path="/accept-invite" element={<GuestRoute><AcceptInvitePage /></GuestRoute>} />
+      <Route path="/forgot-password" element={<Suspense fallback={null}><ForgotPasswordPage /></Suspense>} />
+      <Route path="/reset-password" element={<Suspense fallback={null}><ResetPasswordPage /></Suspense>} />
+      <Route path="/verify-email" element={<Suspense fallback={null}><VerifyEmailPage /></Suspense>} />
+      <Route path="/privacy" element={<Suspense fallback={null}><LegalPage kind="privacy" /></Suspense>} />
+      <Route path="/terms" element={<Suspense fallback={null}><LegalPage kind="terms" /></Suspense>} />
 
       <Route path="/print/invoices/:id" element={<ProtectedRoute><Suspense fallback={null}><InvoicePrintPage /></Suspense></ProtectedRoute>} />
       <Route path="/print/quotes/:id" element={<ProtectedRoute><Suspense fallback={null}><QuotePrintPage /></Suspense></ProtectedRoute>} />
@@ -125,6 +134,12 @@ export default function AppRoutes() {
         <Route path="invoices" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><InvoicesPage /></RequirePermission>} />
         <Route path="invoices/new" element={<RequirePermission permissions={['invoices:manage']}><InvoicePage /></RequirePermission>} />
         <Route path="invoices/:id" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><InvoicePage /></RequirePermission>} />
+        <Route path="analytics" element={<RequirePermission permissions={['leads:read:all']}><AnalyticsPage /></RequirePermission>} />
+        <Route path="exports" element={<RequirePermission permissions={['export:run']}><ExportsPage /></RequirePermission>} />
+        <Route path="accounting" element={<RequirePermission permissions={['accounting:manage']}><AccountingPage /></RequirePermission>} />
+        <Route path="projects" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><ProjectsPage /></RequirePermission>} />
+        <Route path="projects/:id" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><ProjectPage /></RequirePermission>} />
+        <Route path="time" element={<RequirePermission permissions={['leads:write']}><TimePage /></RequirePermission>} />
         <Route path="follow-ups" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><FollowUpsPage /></RequirePermission>} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="conversations" element={<RequirePermission permissions={['leads:read:all', 'leads:read:own']}><ConversationsPage /></RequirePermission>} />

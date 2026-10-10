@@ -14,7 +14,7 @@ import { createAdmin, loginAdmin, adminBearer } from './helpers/adminHelpers.js'
 import { bearer, registerTenant, inviteAndAccept } from './helpers/authHelpers.js';
 
 const I = '/api/v1/integrations';
-const OPENAI_KEY = 'sk-test1234567890abcdefghijklmnopqrstuvwxyzXYZ9';
+const OPENAI_KEY = 'sk-test1234567890abcdefghijklmnopqrstuvwxyzXYZ9'; // secret-scan: ignore (fake test key)
 const sys = (fn) => runAsSystem('test', fn);
 const save = (u, provider, body) => request(app).put(`${I}/${provider}`).set(bearer(u.token)).send(body);
 

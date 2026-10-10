@@ -1,3 +1,4 @@
+import PdfDownloadButton from '../../../components/PdfDownloadButton.jsx';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -326,6 +327,7 @@ export default function LeadDetailPage() {
           <div className="mt-2 flex flex-wrap gap-2"><StatusBadge status={lead.status} /><PriorityBadge priority={lead.priority} /><SafetyFlags lead={lead} /></div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {can('export:run') && <PdfDownloadButton path={`/leads/${lead.id}/dossier.pdf`} fileName="lead-dossier.pdf">Dossier PDF</PdfDownloadButton>}
           {canWrite && <LeadSalesActions lead={lead} />}
           {can('leads:delete') && <Button variant="danger" onClick={() => setConfirmDelete(true)}>Delete</Button>}
         </div>

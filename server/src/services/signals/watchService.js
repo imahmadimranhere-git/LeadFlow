@@ -37,6 +37,13 @@ async function assertPlatformInPlan(tenantId, platform) {
   }
 }
 
+/** One watch of this company (404 otherwise). */
+export async function getWatch(id) {
+  const w = await HashtagWatch.findOne({ _id: id });
+  if (!w) throw ApiError.notFound('Watch not found');
+  return w.toJSON();
+}
+
 export async function listWatches() {
   const items = await HashtagWatch.find({}).sort({ createdAt: -1 }).limit(100).populate('createdBy', 'name');
   return items.map((w) => w.toJSON());

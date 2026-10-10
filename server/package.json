@@ -10,10 +10,21 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node --test --test-concurrency=1",
+    "test": "node scripts/runTests.mjs",
     "seed": "node scripts/seed.js",
     "rotate-keys": "node scripts/rotateKeys.js",
-    "webhook:test": "node scripts/sendTestWebhook.js"
+    "webhook:test": "node scripts/sendTestWebhook.js",
+    "test:pure": "node scripts/runTests.mjs --pure",
+    "test:coverage": "node scripts/runTests.mjs --coverage",
+    "security:scan": "node scripts/securityScan.mjs",
+    "secrets:generate": "node scripts/generateSecrets.mjs",
+    "check:prod": "node scripts/checkProductionEnv.mjs",
+    "smoke": "node scripts/smokeTest.mjs",
+    "db:backup": "node scripts/backup.mjs",
+    "db:restore": "node scripts/restore.mjs",
+    "db:indexes": "node scripts/checkIndexes.mjs",
+    "tenant:purge": "node scripts/purgeTenant.mjs",
+    "load": "node scripts/loadTest.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

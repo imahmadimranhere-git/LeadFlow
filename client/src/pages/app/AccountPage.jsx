@@ -6,6 +6,7 @@ import { apiErrorMessage, apiFieldErrors } from '../../utils/apiErrors.js';
 import { ROLE_LABELS } from '../../utils/roles.js';
 import { formatDate } from '../../utils/platform.js';
 import useDocumentTitle from '../../hooks/useDocumentTitle.js';
+import { EmailCard, TwoStepCard, SessionsCard } from '../../components/account/SecuritySettings.jsx';
 
 function ChangePasswordForm() {
   const { changePassword } = useAuth();
@@ -74,10 +75,9 @@ export default function AccountPage() {
           <ChangePasswordForm />
         </Card>
 
-        <Card title="Sessions">
-          <p className="mb-4 text-sm text-white/60">Lost a device or used a shared computer? Log out everywhere, including this browser.</p>
-          <Button variant="danger" onClick={() => setConfirmOpen(true)}>Log out of all devices</Button>
-        </Card>
+        <EmailCard />
+        <TwoStepCard />
+        <SessionsCard onLogoutAll={() => setConfirmOpen(true)} />
       </div>
 
       <Modal

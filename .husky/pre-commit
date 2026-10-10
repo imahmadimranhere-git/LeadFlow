@@ -1,6 +1,16 @@
-# Pre-commit: block commits that contain secrets (API keys, tokens, private keys)
+# Pre-commit: block commits that contain secrets (API keys, tokens, private keys) or known-dangerous code.
 npx secretlint $(git diff --cached --name-only --diff-filter=ACM) || {
   echo ""
   echo "❌ Secret detected! Commit blocked. Remove the secret, rotate it, and try again."
   exit 1
 }
+node server/scripts/securityScan.mjs || {
+  echo ""
+  echo "❌ LeadFlow security scan found a problem (see above). Fix it before committing."
+  exit 1
+}
+# .env must never be staged
+if git diff --cached --name-only | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$' >/dev/null; then
+  echo "❌ A .env file is staged. Run: git restore --staged <file>  (secrets must never be committed)"
+  exit 1
+fi

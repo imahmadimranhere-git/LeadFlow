@@ -7,6 +7,9 @@ import { NOTIFICATION_TYPES } from '../config/notificationOptions.js';
 
 export const USER_STATUSES = ['ACTIVE', 'DISABLED'];
 
+// AES-256-GCM encrypted value (see utils/crypto.js)
+const encryptedValue = new mongoose.Schema({ ciphertext: String, iv: String, authTag: String, keyVersion: Number }, { _id: false });
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 80 },
@@ -24,6 +27,14 @@ const userSchema = new mongoose.Schema(
     passwordChangedAt: { type: Date, default: null, private: true },
     lastLoginIp: { type: String, default: null, private: true },
     lastLoginAt: { type: Date, default: null },
+
+    // Two-step login (Phase 27) — optional TOTP (Google Authenticator / Authy / Microsoft Authenticator)
+    mfaEnabled: { type: Boolean, default: false },
+    mfaEnabledAt: { type: Date, default: null },
+    mfaSecretEnc: { type: encryptedValue, default: null, select: false, private: true },
+    mfaPendingSecretEnc: { type: encryptedValue, default: null, select: false, private: true },
+    mfaRecoveryHashes: { type: [String], default: undefined, select: false, private: true }, // sha256 of one-time recovery codes
+    lastTotpStep: { type: Number, default: -1, private: true }, // a code can be used only once (no replay)
 
     // Notifications (Phase 19) — each person decides for themselves
     notificationPrefs: {

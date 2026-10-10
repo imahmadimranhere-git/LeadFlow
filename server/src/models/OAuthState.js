@@ -5,7 +5,7 @@ import mongoose from '../config/mongoose.js';
 
 const oauthStateSchema = new mongoose.Schema(
   {
-    stateHash: { type: String, required: true },
+    stateHash: { type: String, required: true, private: true },
     provider: { type: String, required: true, maxlength: 40 },
     tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

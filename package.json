@@ -7,7 +7,11 @@
     "prepare": "husky",
     "secret-scan": "secretlint \"**/*\"",
     "install:all": "npm install && npm --prefix server install && npm --prefix client install",
-    "test": "npm --prefix server test"
+    "test": "npm --prefix server test",
+    "security:scan": "node server/scripts/securityScan.mjs",
+    "security:scan:strict": "node server/scripts/securityScan.mjs --strict",
+    "security:audit": "npm --prefix server audit --omit=dev --audit-level=high && npm --prefix client audit --omit=dev --audit-level=high",
+    "security": "npm run security:scan && npm run secret-scan && npm run security:audit"
   },
   "devDependencies": {
     "@secretlint/secretlint-rule-preset-recommend": "^9.0.0",
