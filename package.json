@@ -14,7 +14,7 @@
     "security": "npm run security:scan && npm run secret-scan && npm run security:audit"
   },
   "devDependencies": {
-    "@secretlint/secretlint-rule-preset-recommend": "^9.0.0",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.7",
     "husky": "^9.1.7",
     "secretlint": "^9.0.0"
   }
