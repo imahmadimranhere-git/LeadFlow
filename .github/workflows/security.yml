@@ -73,7 +73,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # whole history: a secret deleted later is STILL in Git and must be rotated
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
