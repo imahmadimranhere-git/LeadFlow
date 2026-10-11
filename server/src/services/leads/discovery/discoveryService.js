@@ -65,7 +65,14 @@ export async function createRun(auth, { source, queries }) {
     throw err;
   }
 
-  const unique = [...new Map(queries.map((q) => [q.query.toLowerCase().replace(/\s+/g, ' '), q])).values()];
+  // duplicates (case / extra spaces) removed — the FIRST version the person typed is kept
+  const seen = new Set();
+  const unique = queries.filter((q) => {
+    const k = q.query.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
   await consumeQuota(auth.tenantId, 'discoverySearches', unique.length); // 1 query = 1 search from the plan
   try {
     const run = await DiscoveryRun.create({ source, queries: unique, createdBy: auth.userId });

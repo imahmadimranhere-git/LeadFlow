@@ -1,0 +1,6 @@
+{
+  "name": "leadflow-extension",
+  "private": true,
+  "type": "module",
+  "description": "Chrome ignores this file. It only tells Node (used by the tests) that lib/*.js are ES modules."
+}

@@ -116,8 +116,23 @@ describe('Audit metadata sanitising', () => {
       apiKey: 'y',
       refreshToken: 'z',
       count: 3,
-      nested: { evil: true },
+      nested: { ok: true, apiToken: 'leak' },
     });
-    assert.deepEqual(out, { reason: 'late payment', count: 3 });
+    assert.deepEqual(out, { reason: 'late payment', count: 3, nested: { ok: true } }, 'secret keys are dropped inside nested objects too');
+  });
+
+  it('keeps edit history (old → new) and names-only keys; depth is limited', () => {
+    const out = sanitizeMetadata({
+      changes: { amountMinor: { from: '5000000', to: '5500000' }, passwordHash: { from: 'a', to: 'b' } },
+      secretsChanged: ['apiKey'],
+      hashtags: ['needawebsite'],
+      planCode: 'pro',
+      deep: { a: { b: { c: 'too deep' } } },
+    });
+    assert.deepEqual(out.changes, { amountMinor: { from: '5000000', to: '5500000' } });
+    assert.deepEqual(out.secretsChanged, ['apiKey'], 'field NAMES, not values');
+    assert.deepEqual(out.hashtags, ['needawebsite']);
+    assert.equal(out.planCode, 'pro');
+    assert.deepEqual(out.deep, { a: {} }, 'max 2 levels');
   });
 });

@@ -26,3 +26,6 @@ button.link { width: auto; margin: 0; padding: 0; background: none; color: var(-
 .msg { margin: 8px 12px 0; padding: 8px; border-radius: 8px; background: var(--card); }
 .msg.error { color: var(--red); }
 .msg.ok { color: var(--brand); }
+.check .ok { color: var(--brand); }
+.save-bar { position: sticky; bottom: 0; margin: 12px -12px -12px; padding: 4px 12px 12px; background: var(--bg); border-top: 1px solid var(--line); }
+.save-bar .msg { margin: 8px 0 0; }

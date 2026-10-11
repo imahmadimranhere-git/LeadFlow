@@ -4,6 +4,7 @@
 //  - the server validates everything again; this file only helps the user
 import { AuthError, validServer, getServer, setServer, isPaired, pair, call, logout } from './lib/api.js';
 import { readActivePage } from './lib/page.js';
+import { suggestFields, isMapsListUrl, isMapsPlaceUrl } from './lib/extract.js';
 
 const $ = (id) => document.getElementById(id);
 const VIEWS = ['view-pair', 'view-main', 'view-done'];
@@ -17,10 +18,32 @@ function show(view) {
 }
 
 function message(text, kind = 'error') {
-  const el = $('msg');
-  el.textContent = text || '';
-  el.className = `msg ${kind}`;
-  el.classList.toggle('hidden', !text);
+  for (const id of ['msg', 'save-msg']) {
+    const el = $(id);
+    if (!el) continue;
+    el.textContent = text || '';
+    el.className = `msg ${kind}`;
+    // the second copy sits next to the Save button (visible without scrolling)
+    el.classList.toggle('hidden', !text || (id === 'save-msg' && $('view-main').classList.contains('hidden')));
+  }
+}
+
+/** Fill EMPTY inputs only with what was visible on the page; the user checks and edits. */
+function applySuggestions(form, s) {
+  const filled = [];
+  for (const [k, v] of Object.entries(s)) {
+    const el = form.elements[k];
+    if (!el || !v) continue;
+    if (el.tagName === 'SELECT') {
+      if (![...el.options].some((o) => o.value === v)) continue;
+      el.value = v;
+    } else {
+      if (el.value.trim()) continue;
+      el.value = v;
+    }
+    filled.push(k);
+  }
+  return filled;
 }
 
 /** Only links into our own dashboard's lead pages. */
@@ -125,10 +148,20 @@ async function startMain() {
     $('page-url').textContent = page.url;
     const form = $('form');
     form.elements.snippet.value = page.selection;
-
-    const check = await call('/check', { method: 'POST', body: { url: page.url } });
     const box = $('check');
     box.textContent = '';
+
+    if (isMapsListUrl(page.url)) {
+      addLine(box, 'This is the Google Maps LIST. First click one business in the list (its details open), then click this icon again.', 'warn');
+    }
+    const filled = applySuggestions(form, suggestFields(page));
+    if (filled.length) {
+      addLine(box, `✔ Filled from the page: ${filled.filter((k) => !['profileType', 'contactSource', 'companyName'].includes(k)).join(', ')} — check it, then press Save lead.`, 'ok');
+    } else if (isMapsPlaceUrl(page.url)) {
+      addLine(box, 'Could not read this Maps place — type the name and phone yourself.', 'warn');
+    }
+
+    const check = await call('/check', { method: 'POST', body: { url: page.url } });
     if (!check.ok) return addLine(box, errorText(check), 'warn');
     const c = check.data;
     $('page-kind').textContent = `${c.platform.toLowerCase()} · ${c.pageKind.toLowerCase()}`;
@@ -153,8 +186,9 @@ function formBody() {
 
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!page?.url) return;
+  if (!page?.url) return message('No page found — close this window and click the icon again.');
   $('btn-save').disabled = true;
+  $('btn-save').textContent = 'Saving…';
   message('');
   try {
     const res = await call('/leads', { method: 'POST', body: formBody() });
@@ -171,9 +205,10 @@ $('form').addEventListener('submit', async (e) => {
     }
     message(errorText(res));
   } catch (err) {
-    if (!(await handleAuthError(err))) message('Something went wrong. Please try again.');
+    if (!(await handleAuthError(err))) message(err?.name === 'AbortError' || err instanceof TypeError ? 'LeadFlow server not reachable — is it running (npm run dev:local)?' : 'Something went wrong. Please try again.');
   } finally {
     $('btn-save').disabled = false;
+    $('btn-save').textContent = 'Save lead';
   }
 });
 

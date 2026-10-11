@@ -53,9 +53,12 @@ export async function handleMetaCallback({ code, state, error }, meta2 = {}) {
   if (error || !code || typeof code !== 'string' || code.length > 2000) return appRedirect('error', 'cancelled');
 
   return runWithTenant({ tenantId: st.tenantId, userId: st.userId }, async () => {
+    let step = 'code';
     try {
       const short = await meta.exchangeCode(code);
+      step = 'long_lived';
       const long = await meta.exchangeLongLived(short.access_token);
+      step = 'accounts';
       const accounts = await meta.listInstagramAccounts(long.access_token);
       if (!accounts.length) return appRedirect('error', 'no_instagram_business_account');
 
@@ -90,8 +93,12 @@ export async function handleMetaCallback({ code, state, error }, meta2 = {}) {
       await recordAudit({ actorType: 'USER', actorId: st.userId, tenantId: st.tenantId, action: 'integration.connected', targetType: 'TenantIntegration', metadata: { provider: 'META_GRAPH', accounts: accounts.length } });
       return appRedirect('connected');
     } catch (err) {
-      logSecurityEvent('oauth_failed', { provider: 'META', tenantId: String(st.tenantId), reason: err.message?.slice(0, 100) });
-      return appRedirect('error', 'meta_refused');
+      const reason = meta.diagnoseMetaError(err, step);
+      logSecurityEvent('oauth_failed', {
+        provider: 'META', tenantId: String(st.tenantId), step, reason,
+        metaCode: err.code ?? null, metaSubcode: err.subcode ?? null, metaMessage: err.metaMessage || err.message?.slice(0, 100),
+      });
+      return appRedirect('error', reason);
     }
   });
 }

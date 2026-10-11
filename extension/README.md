@@ -12,6 +12,9 @@ Save the post / profile / website you are looking at as a lead.
 ## Security
 - Permissions: `activeTab`, `scripting`, `storage` only. No content scripts, no host permissions.
 - Reads only the tab URL, title and the text YOU selected — only when you click the icon.
+- On a Google Maps PLACE you opened, it also reads that place's visible name, phone, website and address
+  to pre-fill the form (lib/extract.js, tested in server/tests/extensionExtract.test.js). One place, on your click,
+  you check and press Save — no bulk collection, nothing saved without you.
 - No password: one-time pairing code → 15-minute access token (session storage) + rotating refresh token.
 - Only `https://` servers (plain `http://` only for localhost). No cookies, no redirects.
 - Everything from the page/server is shown with `textContent`; dashboard links are checked before opening.

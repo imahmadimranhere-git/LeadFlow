@@ -46,6 +46,7 @@ describe('Chrome extension — pairing & tokens', () => {
     await startTestDb();
     await Plan.insertMany(DEFAULT_PLANS);
     owner = await registerTenant();
+    await usePlan(owner.tenant.id, 'growth'); // the free trial allows only 2 team members — we need 3
     sales = await inviteAndAccept(owner, 'SALES');
     viewer = await inviteAndAccept(owner, 'VIEWER');
     other = await registerTenant();

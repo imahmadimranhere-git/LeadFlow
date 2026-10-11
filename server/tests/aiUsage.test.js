@@ -80,7 +80,8 @@ describe('AI usage & cost', () => {
       // one minute BEFORE local midnight → yesterday, even though in UTC it may be the same date
       { createdAt: new Date(todayStart.getTime() - 60_000), userId: oid(admin.user.id), requestType: 'REPLY_GENERATION', estimatedCostUsd: 0.04 },
     ]);
-    await seed(other.tenant.id, [{ createdAt: new Date(todayStart.getTime() + 60_000), estimatedCostUsd: 9 }]);
+    // the other company keeps the default time zone (UTC) → use "now", which is "today" in every zone's own clock
+    await seed(other.tenant.id, [{ createdAt: new Date(), estimatedCostUsd: 9 }]);
   });
   after(stopTestDb);
 

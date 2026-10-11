@@ -40,15 +40,42 @@ const nodeArgs = [
   ...(coverage ? ['--experimental-test-coverage'] : []),
   '--test-reporter=spec',
   '--test-reporter-destination=stdout',
-  `--test-reporter=${path.join(testsDir, 'helpers', 'failuresReporter.mjs')}`,
-  `--test-reporter-destination=${reportFile}`,
+  // relative + forward slashes: on Windows an absolute "C:\\..." path is read as a URL scheme "c:" and fails
+  '--test-reporter=./tests/helpers/failuresReporter.mjs',
+  '--test-reporter-destination=test-report.txt', // relative to server/ (cwd below)
   ...files.map((f) => path.join('tests', f)),
 ];
 
 const started = Date.now();
+const childEnv = { ...process.env, NODE_ENV: 'test' };
+
+// ONE temporary MongoDB for all database test files (each file still gets its own fresh database).
+// Starting a MongoDB per file was slow on Windows and hit the 10-second start limit (antivirus scans).
+let mongod = null;
+if (files.some(needsDb) && !process.env.TEST_MONGODB_URI) {
+  process.stdout.write('Starting a temporary MongoDB for the tests (the first time can take 1–2 minutes)…\n');
+  try {
+    const { MongoMemoryServer } = await import('mongodb-memory-server');
+    mongod = await MongoMemoryServer.create({ instance: { launchTimeout: 180_000 } });
+    childEnv.TEST_MONGODB_SERVER_URI = mongod.getUri();
+  } catch (err) {
+    process.stderr.write(`\n❌ The temporary MongoDB could not start: ${err.message}\n   Fixes: check internet (first download), allow "mongod.exe" in your antivirus/firewall, then run npm test again.\n   See TESTING.md → "Aam masle".\n`);
+    process.exit(1);
+  }
+}
+const stopMongo = async () => {
+  if (mongod) await mongod.stop().catch(() => {});
+  mongod = null;
+};
+process.on('SIGINT', async () => {
+  await stopMongo();
+  process.exit(130);
+});
+
 process.stdout.write(`Running ${files.length} test file(s)${pureOnly ? ' (no database)' : ''}…\n`);
-const child = spawn(process.execPath, nodeArgs, { cwd: serverDir, stdio: 'inherit', env: { ...process.env, NODE_ENV: 'test' } });
-child.on('exit', (code) => {
+const child = spawn(process.execPath, nodeArgs, { cwd: serverDir, stdio: 'inherit', env: childEnv });
+child.on('exit', async (code) => {
+  await stopMongo();
   let summary = '';
   try {
     summary = fs.readFileSync(reportFile, 'utf8').split('\n').slice(0, 3).join('\n');

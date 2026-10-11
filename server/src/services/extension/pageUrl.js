@@ -40,6 +40,24 @@ export function detectPlatform(url) {
   return PLATFORMS.find(([, rx]) => rx.test(host))?.[0] || 'WEB';
 }
 
+const MAPS_HOST = /(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$/i;
+
+function googleMapsPlace(u) {
+  if (!MAPS_HOST.test(u.hostname) || !/^\/maps\/place\/[^/]+/.test(u.pathname)) return null;
+  const name = u.pathname.split('/')[3];
+  let decoded = u.pathname;
+  try {
+    decoded = decodeURIComponent(u.pathname);
+  } catch {
+    // keep raw
+  }
+  const ftid = /!1s(0x[0-9a-f]{1,16}:0x[0-9a-f]{1,16})/i.exec(decoded)?.[1]?.toLowerCase();
+  return `https://www.google.com/maps/place/${name}/${ftid ? `data=!4m2!3m1!1s${ftid}` : ''}`.slice(0, 2048);
+}
+
+/** "Ideal Rent a Car - Google Maps" → "Ideal Rent a Car" (page titles used as a lead name). */
+export const cleanPageTitle = (title) => String(title || '').replace(/\s*[-–|]\s*Google\s+Maps\s*$/i, '').trim();
+
 /** One canonical form per page (null for anything that isn't a normal http(s) URL). */
 export function canonicalPageUrl(url) {
   const u = parse(url);
@@ -60,6 +78,11 @@ export function canonicalPageUrl(url) {
     if (!u.pathname.endsWith('/') && !/\.php$/i.test(u.pathname)) u.pathname += '/';
     return u.toString().slice(0, 2048);
   }
+
+  // Google Maps place: the long address changes with the map position/zoom/search, so keep only the
+  // place name + its stable place id (…!1s0x…:0x…) → the same business always gets the same URL.
+  const maps = googleMapsPlace(u);
+  if (maps) return maps;
 
   // Other websites: drop tracking parameters only
   for (const k of [...u.searchParams.keys()]) if (TRACKING_PARAM.test(k)) u.searchParams.delete(k);

@@ -28,7 +28,7 @@ const subscriptionSchema = new mongoose.Schema(
   { timestamps: true, strict: 'throw' }
 );
 
-subscriptionSchema.plugin(tenantScopePlugin);
+subscriptionSchema.plugin(tenantScopePlugin, { tenantIndex: false }); // own UNIQUE { tenantId: 1 } below
 subscriptionSchema.index({ tenantId: 1 }, { unique: true });
 subscriptionSchema.index({ status: 1 });
 

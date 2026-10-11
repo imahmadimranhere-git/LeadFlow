@@ -19,7 +19,13 @@ const META_ERRORS = {
   invalid_request: 'Facebook sent back an unexpected answer. Please try again.',
   cancelled: 'Login was cancelled.',
   no_instagram_business_account: 'No Instagram Business/Creator account linked to your Facebook Pages was found.',
-  meta_refused: 'Meta refused the connection. Check the app setup and try again.',
+  meta_refused: 'Meta refused the connection. The server terminal shows Meta’s exact reason (line "security:oauth_failed").',
+  redirect_uri_mismatch: 'Meta does not accept the return address. In your Meta app → Facebook Login for Business → Settings, add the redirect URI exactly: http://localhost:5000/api/v1/integrations/meta/oauth/callback (or your API_PUBLIC_URL + that path).',
+  bad_app_secret: 'Meta rejected the App Secret. Copy it again from Meta app → App settings → Basic (no spaces) into META_APP_SECRET in server/.env, then restart the server.',
+  bad_app_id: 'Meta does not know this App ID. Copy it again from Meta app → App settings → Basic into META_APP_ID in server/.env, then restart the server.',
+  bad_graph_version: 'The Graph API version in META_GRAPH_VERSION is not valid. Use the version shown in Meta app → App settings → Advanced (e.g. v24.0), then restart the server.',
+  missing_permission: 'Connected to Facebook, but Meta did not give the Pages/Instagram permission. In the Meta app add instagram_basic, pages_show_list and business_management, then connect again and keep every permission ON.',
+  meta_unreachable: 'The server could not reach Meta (graph.facebook.com). Check your internet and try again.',
 };
 
 const CATEGORY_LABELS = { AI: 'AI', SEARCH: 'Search', SOCIAL: 'Social', MESSAGING: 'Messaging', EMAIL: 'Email', DATA: 'Data providers' };

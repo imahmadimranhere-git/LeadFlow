@@ -29,3 +29,7 @@ test-report.txt
 # Database backups (Phase 30) — never commit (contain all customer data, even if encrypted)
 backups/
 server/backups/
+
+# Local development database (npm run dev:local) — never commit
+server/.localdb/
+.localdb/

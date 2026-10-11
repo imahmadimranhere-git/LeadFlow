@@ -116,7 +116,7 @@ const tenantSettingsSchema = new mongoose.Schema(
   { timestamps: true, strict: 'throw' }
 );
 
-tenantSettingsSchema.plugin(tenantScopePlugin);
+tenantSettingsSchema.plugin(tenantScopePlugin, { tenantIndex: false }); // own UNIQUE { tenantId: 1 } below
 tenantSettingsSchema.index({ tenantId: 1 }, { unique: true });
 
 const TenantSettings = mongoose.models.TenantSettings || mongoose.model('TenantSettings', tenantSettingsSchema);

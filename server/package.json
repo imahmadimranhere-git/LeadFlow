@@ -24,7 +24,9 @@
     "db:restore": "node scripts/restore.mjs",
     "db:indexes": "node scripts/checkIndexes.mjs",
     "tenant:purge": "node scripts/purgeTenant.mjs",
-    "load": "node scripts/loadTest.mjs"
+    "load": "node scripts/loadTest.mjs",
+    "db:check": "node scripts/checkDb.mjs",
+    "dev:local": "node scripts/devLocal.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

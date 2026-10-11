@@ -104,7 +104,10 @@ export async function validateUrl(input, opts = {}) {
   // EVERY resolved address must be public (an attacker's DNS could return one public + one private)
   if (!addresses.every((a) => o.addressPolicy(a.address))) throw new SafeFetchError('BLOCKED_ADDRESS', 'This address is not allowed');
 
-  return { url, port, address: addresses[0].address, family: addresses[0].family };
+  // IPv4 first: many home/mobile networks (e.g. in Pakistan) resolve IPv6 addresses but cannot route
+  // IPv6 traffic. Browsers silently fall back; a pinned connection must do the same (see safeFetch).
+  const ordered = [...addresses].sort((a, b) => (a.family === 4 ? 0 : 1) - (b.family === 4 ? 0 : 1));
+  return { url, port, address: ordered[0].address, family: ordered[0].family, addresses: ordered };
 }
 
 // ---------------------------------------------------------------- request
@@ -123,7 +126,9 @@ function requestOnce(target, { method, headers, body, timeoutMs, maxBytes }) {
         method,
         headers: { 'user-agent': 'LeadFlowBot/1.0 (+safe-fetch)', accept: '*/*', ...headers },
         // Pin the connection to the IP we already checked → DNS rebinding can't swap it
-        lookup: (_host, _opts, cb) => cb(null, address, family),
+        // Node 20+ asks for ALL addresses ({ all: true }, "happy eyeballs") and then expects an ARRAY —
+        // answering with a single address made every request to a host NAME fail ("Could not connect").
+        lookup: (_host, lookupOpts, cb) => (lookupOpts && lookupOpts.all ? cb(null, [{ address, family }]) : cb(null, address, family)),
         servername: net.isIP(url.hostname) ? undefined : url.hostname, // TLS SNI + certificate check by name
         agent: false, // no connection reuse, no shared cookies
         timeout: timeoutMs,
@@ -153,6 +158,21 @@ function requestOnce(target, { method, headers, body, timeoutMs, maxBytes }) {
   });
 }
 
+/** Try the checked addresses one by one (max 3) when a connection cannot be made at all. */
+async function requestWithFallback(target, o) {
+  const list = (target.addresses?.length ? target.addresses : [{ address: target.address, family: target.family }]).slice(0, 3);
+  let lastErr;
+  for (const a of list) {
+    try {
+      return await requestOnce({ ...target, address: a.address, family: a.family }, o);
+    } catch (err) {
+      lastErr = err;
+      if (!(err instanceof SafeFetchError) || !['NETWORK', 'TIMEOUT'].includes(err.code)) throw err;
+    }
+  }
+  throw lastErr;
+}
+
 /**
  * safeFetch(url, { method, headers, body, timeoutMs, maxBytes, maxRedirects, allowedContentTypes })
  * → { status, headers, body: Buffer, url: finalUrl, text(), json() }
@@ -164,7 +184,7 @@ export async function safeFetch(input, opts = {}) {
   let current = String(input);
   for (let hop = 0; hop <= o.maxRedirects; hop += 1) {
     const target = await validateUrl(current, o); // re-checked on EVERY hop
-    const res = await requestOnce(target, o);
+    const res = await requestWithFallback(target, o);
 
     if ([301, 302, 303, 307, 308].includes(res.status) && res.headers.location) {
       if (hop === o.maxRedirects) throw new SafeFetchError('TOO_MANY_REDIRECTS', 'Too many redirects');

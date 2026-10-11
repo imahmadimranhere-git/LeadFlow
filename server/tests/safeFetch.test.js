@@ -60,6 +60,13 @@ describe('SafeFetch: address checks', () => {
     assert.equal(t.address, '93.184.216.34');
     assert.equal(t.port, 443);
   });
+
+  it('IPv4 is tried first (home networks often resolve IPv6 but cannot route it)', async () => {
+    const resolve = async () => [{ address: '2a03:2880:f12c:83:face:b00c:0:25de', family: 6 }, { address: '157.240.1.1', family: 4 }];
+    const t = await validateUrl('https://graph.facebook.com/v26.0/me', { resolve });
+    assert.equal(t.address, '157.240.1.1');
+    assert.deepEqual(t.addresses.map((a) => a.family), [4, 6]);
+  });
 });
 
 describe('SafeFetch: URL rules', () => {
@@ -180,5 +187,22 @@ describe('SafeFetch: real requests (local test server)', () => {
   it('no cookies are sent automatically', async () => {
     const res = await safeFetch(`${base}/ok`, opts());
     assert.equal(res.json().cookie, null);
+  });
+
+  it('a host NAME works, not only an IP (Node 20+ asks DNS for ALL addresses) — regression', async () => {
+    // Before the fix every name-based request (graph.facebook.com, Brave, website audits) failed with NETWORK
+    const res = await safeFetch(`http://lf-name.example:${port}/ok`, { ...opts(), resolve: async () => [{ address: '127.0.0.1', family: 4 }] });
+    assert.equal(res.json().hello, 'world');
+  });
+
+  it('if the first address cannot be reached, the next checked address is used', async () => {
+    // 127.0.0.2 has nothing listening → connection refused → falls back to 127.0.0.1
+    const resolve = async () => [{ address: '127.0.0.2', family: 4 }, { address: '127.0.0.1', family: 4 }];
+    const res = await safeFetch(`http://lf-fallback.example:${port}/ok`, {
+      ...opts(),
+      resolve,
+      addressPolicy: (ip) => ip === '127.0.0.1' || ip === '127.0.0.2',
+    });
+    assert.equal(res.status, 200);
   });
 });

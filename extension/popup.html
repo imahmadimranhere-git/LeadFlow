@@ -33,7 +33,7 @@
     <div id="check" class="check"></div>
 
     <form id="form" autocomplete="off" novalidate>
-      <p class="small muted">Fill in only what you can SEE on this page. Nothing is looked up or guessed.</p>
+      <p class="small muted">Only what is VISIBLE on this page is filled in. Check it, change anything, then press <b>Save lead</b> (at the bottom).</p>
       <label>Lead name <input name="name" maxlength="150" /></label>
       <div class="row">
         <label>Name on profile <input name="personName" maxlength="120" /></label>
@@ -72,7 +72,10 @@
           <option value="LEGITIMATE_INTEREST" selected>Legitimate interest</option><option value="CONSENT">Consent</option><option value="CONTRACT">Contract</option><option value="OTHER">Other</option>
         </select>
       </label>
-      <button id="btn-save" type="submit">Save lead</button>
+      <div class="save-bar">
+        <div id="save-msg" class="msg hidden" role="status"></div>
+        <button id="btn-save" type="submit">Save lead</button>
+      </div>
     </form>
   </section>
 

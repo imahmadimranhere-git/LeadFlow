@@ -15,7 +15,7 @@ import { detectIntent } from '../leads/discovery/intentDetector.js';
 import { matchService } from '../leads/discovery/serviceMatcher.js';
 import { convertSignal } from '../signals/signalService.js';
 import { extractHashtags, dataCompleteness } from '../signals/extract.js';
-import { canonicalPageUrl, detectPlatform, guessPageKind, urlVariants } from './pageUrl.js';
+import { canonicalPageUrl, cleanPageTitle, detectPlatform, guessPageKind, urlVariants } from './pageUrl.js';
 
 const OPEN_SIGNAL = ['NEW', 'NEEDS_REVIEW', 'FILTERED'];
 const dashboardBase = () => env.CORS_ORIGINS[0].replace(/\/$/, '');
@@ -143,7 +143,7 @@ export async function saveFromExtension(auth, input) {
     const completeness = dataCompleteness({ authorProvided: author.status !== 'NOT_PROVIDED_BY_SOURCE', contactCount: contacts.length });
 
     lead = await createLead(auth, {
-      name: input.name || input.companyName || input.personName || (input.handle && `@${input.handle.replace(/^@/, '')}`) || (input.pageTitle || '').slice(0, 150) || `${platform.toLowerCase()} lead`,
+      name: input.name || input.companyName || input.personName || (input.handle && `@${input.handle.replace(/^@/, '')}`) || cleanPageTitle(input.pageTitle).slice(0, 150) || `${platform.toLowerCase()} lead`,
       personName: input.personName || null,
       companyName: input.companyName || null,
       city: input.city || null,

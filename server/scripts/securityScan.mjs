@@ -211,7 +211,7 @@ export function scanModels(text, rel) {
 }
 
 // ------------------------------------------------------------------ runner
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '.husky']);
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '.husky', '.localdb', 'backups']);
 function walk(dir, root, files = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (SKIP_DIRS.has(e.name)) continue;

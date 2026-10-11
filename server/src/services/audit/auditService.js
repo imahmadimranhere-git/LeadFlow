@@ -9,15 +9,23 @@ const SENSITIVE_KEY = /pass|token|secret|key|hash|cookie|authorization|otp|code/
 const MAX_KEYS = 20;
 
 /** Keep metadata small and free of secrets: primitives only, sensitive keys dropped. */
-export function sanitizeMetadata(meta = {}) {
+// Keys whose NAME looks secret but whose VALUE is only names / labels (never a secret) — reviewed list.
+// Without it, "hashtags" (contains "hash") or "secretsChanged" (field NAMES) were silently dropped.
+const SAFE_KEYS = new Set(['secretsChanged', 'changedSecrets', 'fieldsChanged', 'planCode', 'hashtags', 'hashtag', 'keySource', 'errorCode', 'statusCode', 'countryCode', 'currencyCode']);
+const MAX_DEPTH = 2; // e.g. { changes: { amountMinor: { from, to } } }
+
+export function sanitizeMetadata(meta = {}, depth = 0) {
   const out = {};
-  for (const [key, value] of Object.entries(meta).slice(0, MAX_KEYS)) {
-    if (SENSITIVE_KEY.test(key)) continue;
+  for (const [key, value] of Object.entries(meta || {}).slice(0, MAX_KEYS)) {
+    if (SENSITIVE_KEY.test(key) && !SAFE_KEYS.has(key)) continue;
     if (value === null || ['number', 'boolean'].includes(typeof value)) out[key] = value;
     else if (typeof value === 'string') out[key] = value.slice(0, 300);
     else if (Array.isArray(value)) out[key] = value.slice(0, 20).map((v) => String(v).slice(0, 60));
     else if (value instanceof Date) out[key] = value.toISOString();
     else if (value && typeof value.toString === 'function' && mongoose.isValidObjectId(value)) out[key] = String(value);
+    else if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype && depth < MAX_DEPTH) {
+      out[key] = sanitizeMetadata(value, depth + 1); // nested plain objects: same rules (secret keys dropped inside too)
+    }
   }
   return out;
 }

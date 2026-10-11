@@ -8,13 +8,39 @@ import env from '../../../config/env.js';
 import { safeFetch } from '../../../utils/safeFetch.js';
 
 export class MetaError extends Error {
-  constructor(message, { code = null, reconnect = false, rateLimited = false } = {}) {
+  constructor(message, { code = null, subcode = null, metaMessage = null, reconnect = false, rateLimited = false, network = false } = {}) {
     super(message);
     this.name = 'MetaError';
     this.code = code;
+    this.subcode = subcode;
+    this.metaMessage = metaMessage; // Meta's own explanation (tokens/secrets removed) — for logs and diagnosis
     this.reconnect = reconnect;
     this.rateLimited = rateLimited;
+    this.network = network;
   }
+}
+
+/** Meta's error text without anything that could be a token/secret/code (long random strings). */
+export function safeMetaMessage(msg) {
+  return String(msg || '')
+    .replace(/[A-Za-z0-9_\-]{32,}/g, '…')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 200) || null;
+}
+
+/** Turns a failed connection into a short reason the app can explain to a beginner. */
+export function diagnoseMetaError(err, step) {
+  const m = String(err?.metaMessage || '').toLowerCase();
+  const code = err?.code;
+  if (err?.network) return 'meta_unreachable';
+  if (code === 191 || /redirect_uri|redirect uri|url blocked|domain of this url/.test(m)) return 'redirect_uri_mismatch';
+  if (/client secret|client_secret|appsecret|app secret/.test(m)) return 'bad_app_secret';
+  if (/client_id|app id|invalid application|application does not exist/.test(m)) return 'bad_app_id';
+  if (/version/.test(m) && /unknown|unsupported|invalid|deprecated/.test(m)) return 'bad_graph_version';
+  if (/verification code|code has (expired|been used)|authorization code/.test(m)) return 'expired_or_invalid';
+  if (step === 'accounts' && (code === 10 || code === 200 || /permission/.test(m))) return 'missing_permission';
+  return 'meta_refused';
 }
 
 export const isMetaConfigured = () => Boolean(env.META_APP_ID && env.META_APP_SECRET);
@@ -40,8 +66,9 @@ async function call(path, params, { token } = {}) {
   let res;
   try {
     res = await transport(url.toString());
-  } catch {
-    throw new MetaError('Could not reach Meta — try again later', { rateLimited: true });
+  } catch (err) {
+    // e.g. "network: TIMEOUT" / "network: NETWORK" / "network: DNS_FAILED" — shown in the server log
+    throw new MetaError('Could not reach Meta — try again later', { rateLimited: true, network: true, metaMessage: `network: ${err?.code || err?.name || 'error'}` });
   }
   let body = {};
   try {
@@ -52,10 +79,11 @@ async function call(path, params, { token } = {}) {
   if (res.status >= 200 && res.status < 300 && !body.error) return body;
 
   const code = body?.error?.code;
-  if (code === 190 || code === 102 || res.status === 401) throw new MetaError('The Meta connection expired or was removed — please reconnect', { code, reconnect: true });
-  if ([4, 17, 32, 613].includes(code) || res.status === 429) throw new MetaError('Meta rate limit reached — will retry later', { code, rateLimited: true });
-  if (code === 10 || code === 200) throw new MetaError('Missing permission — the app needs "Instagram Public Content Access" approved by Meta', { code });
-  throw new MetaError('Meta refused the request', { code });
+  const extra = { code, subcode: body?.error?.error_subcode ?? null, metaMessage: safeMetaMessage(body?.error?.message) };
+  if (code === 190 || code === 102 || res.status === 401) throw new MetaError('The Meta connection expired or was removed — please reconnect', { ...extra, reconnect: true });
+  if ([4, 17, 32, 613].includes(code) || res.status === 429) throw new MetaError('Meta rate limit reached — will retry later', { ...extra, rateLimited: true });
+  if (code === 10 || code === 200) throw new MetaError('Missing permission — the app needs "Instagram Public Content Access" approved by Meta', extra);
+  throw new MetaError('Meta refused the request', extra);
 }
 
 /** The URL the browser is sent to for "Login with Facebook". */

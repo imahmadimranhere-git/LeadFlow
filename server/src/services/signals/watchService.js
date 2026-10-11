@@ -225,7 +225,9 @@ export async function processWatch(watch) {
             break;
           }
           if (err instanceof MetaError && err.reconnect) throw err;
-          result.errors.push(`#${hashtag}: ${err instanceof MetaError ? err.message : 'unexpected error'}`);
+          // show Meta's own reason / the network cause (e.g. "network: TIMEOUT") so problems can be diagnosed
+          const detail = err instanceof MetaError && err.metaMessage ? ` (${err.metaMessage})` : '';
+          result.errors.push(`#${hashtag}: ${err instanceof MetaError ? err.message : 'unexpected error'}${detail}`);
           if (!(err instanceof MetaError)) logger.error({ err: err.message, watchId: String(watch._id) }, 'hashtag query failed');
         }
       }

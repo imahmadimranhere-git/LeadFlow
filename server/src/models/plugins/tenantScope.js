@@ -53,13 +53,18 @@ function updateTouchesTenantId(update) {
 
 const sameId = (a, b) => String(a) === String(b);
 
-export default function tenantScopePlugin(schema) {
+/**
+ * @param {{ tenantIndex?: boolean }} options  tenantIndex:false when the model declares its OWN index that
+ *        starts with tenantId as UNIQUE (one record per company) — two indexes on the same key with different
+ *        options clash in MongoDB, and the unique rule could silently be missing.
+ */
+export default function tenantScopePlugin(schema, { tenantIndex = true } = {}) {
   schema.add({
     tenantId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
+      index: tenantIndex,
       immutable: true,
     },
   });

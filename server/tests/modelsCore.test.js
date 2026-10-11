@@ -39,6 +39,13 @@ describe('Database models', () => {
     }
   });
 
+  it('a UNIQUE { tenantId: 1 } index switches off the plugin\'s plain tenantId index (no clashing indexes)', () => {
+    for (const f of files) {
+      const s = src(f);
+      if (/index\(\{\s*tenantId:\s*1\s*\},\s*\{[^}]*unique:\s*true/.test(s)) assert.match(s, /plugin\(\s*tenantScopePlugin,\s*\{\s*tenantIndex:\s*false/, f);
+    }
+  });
+
   it('strict schemas: unknown fields throw instead of being silently saved (main business models)', () => {
     for (const f of ['User.js', 'Lead.js', 'Quote.js', 'ClientInvoice.js', 'AiUsageLog.js', 'AuthToken.js']) {
       assert.match(src(f), /strict:\s*'throw'/, f);
